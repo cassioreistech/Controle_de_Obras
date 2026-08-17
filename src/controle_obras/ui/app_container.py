@@ -166,14 +166,14 @@ class AppContainer(QMainWindow):
             QComboBox {
                 min-height: 28px;
                 max-height: 30px;
-                padding: 2px 8px;
+                padding: 4px 8px;
                 border: 1px solid #27ae60;
-                border-radius: 3px;
+                border-radius: 4px;
                 background-color: rgba(39, 174, 96, 0.15);
                 color: white;
                 font-size: 12px;
                 font-weight: bold;
-                min-width: 200px;
+                min-width: 250px;
             }
             QComboBox:hover {
                 border-color: #2ecc71;
@@ -184,41 +184,46 @@ class AppContainer(QMainWindow):
                 padding-right: 6px;
             }
             QComboBox QAbstractItemView {
-                background-color: white;
-                color: #2c3e50;
-                selection-background-color: #d5f5e3;
-                selection-color: #2c3e50;
+                background-color: #FFFFFF;
+                color: #1E293B;
+                selection-background-color: #1E40AF;
+                selection-color: #FFFFFF;
+                border: 2px solid #3B82F6;
+                outline: none;
+                font-size: 13px;
             }
             QComboBox QAbstractItemView::item {
-                padding: 4px 8px;
-                min-height: 24px;
+                padding: 8px 12px;
+                min-height: 28px;
+                border-bottom: 1px solid #E5E7EB;
             }
             QComboBox QAbstractItemView::item:hover {
-                background-color: #27ae60;
-                color: white;
+                background-color: #3B82F6;
+                color: #FFFFFF;
+            }
+            QComboBox QAbstractItemView::item:selected {
+                background-color: #1E40AF;
+                color: #FFFFFF;
+            }
+            QComboBox QListView {
+                background-color: #FFFFFF;
+                color: #1E293B;
+            }
+            QComboBox QListView::item {
+                padding: 8px 12px;
+                min-height: 28px;
+                border-bottom: 1px solid #E5E7EB;
+            }
+            QComboBox QListView::item:hover {
+                background-color: #3B82F6;
+                color: #FFFFFF;
+            }
+            QComboBox QListView::item:selected {
+                background-color: #1E40AF;
+                color: #FFFFFF;
             }
         """)
         center_layout.addWidget(self.combo_obras)
-
-        self.btn_trocar = QPushButton("Trocar Obra")
-        self.btn_trocar.setStyleSheet("""
-            QPushButton {
-                min-height: 28px;
-                max-height: 30px;
-                padding: 2px 12px;
-                background-color: #27ae60;
-                color: white;
-                border: none;
-                border-radius: 3px;
-                font-size: 12px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #2ecc71;
-            }
-        """)
-        self.btn_trocar.clicked.connect(self.show_obras_list)
-        center_layout.addWidget(self.btn_trocar)
 
         main_layout.addLayout(center_layout)
 
