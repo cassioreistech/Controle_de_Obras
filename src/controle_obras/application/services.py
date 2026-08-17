@@ -205,6 +205,9 @@ class AnexoService:
     def listar_por_obra(self, obra_id: int) -> list[Anexo]:
         return self._repo.list_by_obra(obra_id)
 
+    def listar_por_lancamento(self, lancamento_id: int) -> list[Anexo]:
+        return self._repo.list_by_lancamento(lancamento_id)
+
     def excluir(self, anexo_id: int) -> None:
         self._repo.delete(anexo_id)
 

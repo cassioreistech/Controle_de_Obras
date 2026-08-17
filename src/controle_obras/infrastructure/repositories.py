@@ -391,6 +391,12 @@ class AnexoRepository(BaseRepository[Anexo]):
         ).fetchall()
         return [self._row_to_anexo(row) for row in rows]
 
+    def list_by_lancamento(self, lancamento_id: int) -> list[Anexo]:
+        rows = self._db.execute(
+            "SELECT * FROM anexos WHERE lancamento_id=? ORDER BY created_at DESC", (lancamento_id,)
+        ).fetchall()
+        return [self._row_to_anexo(row) for row in rows]
+
     def delete(self, anexo_id: int) -> None:
         self._db.execute("DELETE FROM anexos WHERE id=?", (anexo_id,))
 

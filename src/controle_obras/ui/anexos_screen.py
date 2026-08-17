@@ -86,7 +86,9 @@ class AnexosScreen(QWidget):
             item_tipo.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.table.setItem(row, 1, item_tipo)
 
-            item_data = QTableWidgetItem(str(anexo.data_documento or anexo.created_at.date()))
+            data_anexo = anexo.data_documento or anexo.created_at.date()
+            data_str = data_anexo.strftime("%d/%m/%Y") if data_anexo else ""
+            item_data = QTableWidgetItem(data_str)
             item_data.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.table.setItem(row, 2, item_data)
 

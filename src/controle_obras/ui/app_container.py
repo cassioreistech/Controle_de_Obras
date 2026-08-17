@@ -114,16 +114,36 @@ class AppContainer(QMainWindow):
 
     def _build_header(self) -> QWidget:
         header = QWidget()
-        header.setStyleSheet("background-color: #2c3e50; color: white;")
+        header.setFixedHeight(44)
+        header.setStyleSheet("""
+            QWidget {
+                background-color: #2c3e50;
+                color: white;
+            }
+            QPushButton {
+                min-height: 28px;
+                max-height: 30px;
+                padding: 2px 12px;
+                background-color: rgba(255, 255, 255, 0.1);
+                color: white;
+                border: none;
+                border-radius: 3px;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+        """)
         layout = QHBoxLayout(header)
-        layout.setContentsMargins(16, 8, 16, 8)
+        layout.setContentsMargins(12, 0, 12, 0)
+        layout.setSpacing(8)
 
         self.title_label = QLabel("Controle de Obras")
-        self.title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        self.title_label.setStyleSheet("font-size: 15px; font-weight: bold; padding: 0;")
         layout.addWidget(self.title_label)
 
         self.context_label = QLabel("")
-        self.context_label.setStyleSheet("font-size: 12px; color: #bdc3c7;")
+        self.context_label.setStyleSheet("font-size: 11px; color: #bdc3c7; padding: 0;")
         layout.addWidget(self.context_label, 1)
 
         self.btn_dashboard = QPushButton("Dashboard")
@@ -133,14 +153,6 @@ class AppContainer(QMainWindow):
         self.btn_obras = QPushButton("Obras")
         self.btn_obras.clicked.connect(self.show_obras_list)
         layout.addWidget(self.btn_obras)
-
-        self.btn_lancamentos = QPushButton("Lançamentos")
-        self.btn_lancamentos.clicked.connect(self.show_lancamentos)
-        layout.addWidget(self.btn_lancamentos)
-
-        self.btn_anexos = QPushButton("Anexos")
-        self.btn_anexos.clicked.connect(self.show_anexos)
-        layout.addWidget(self.btn_anexos)
 
         self.btn_backup = QPushButton("Backup")
         self.btn_backup.clicked.connect(self._gerar_backup)
