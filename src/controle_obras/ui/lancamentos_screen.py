@@ -241,7 +241,42 @@ class LancamentosScreen(QWidget):
         btn_salvar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_salvar.clicked.connect(self._salvar)
         btn_salvar.setMinimumHeight(32)
-        form_layout.addWidget(btn_salvar, 3, 6, 1, 2)
+
+        btn_limpar = QPushButton("Limpar")
+        btn_limpar.setToolTip("Limpar formulário")
+        btn_limpar.setStyleSheet(f"""
+            QPushButton {{
+                padding: 8px 16px;
+                background-color: {TEXT_SECONDARY};
+                color: {SURFACE};
+                border: 1px solid rgba(0, 0, 0, 35%);
+                border-top-color: rgba(255, 255, 255, 45%);
+                border-bottom-color: rgba(0, 0, 0, 45%);
+                border-radius: 7px;
+                font-size: 13px;
+                font-weight: 600;
+                min-width: 90px;
+            }}
+            QPushButton:hover {{
+                background-color: {TEXT_MUTED};
+                border-top-color: rgba(255, 255, 255, 75%);
+            }}
+            QPushButton:pressed {{
+                padding-top: 10px;
+                padding-bottom: 6px;
+                border-top-color: rgba(0, 0, 0, 45%);
+                border-bottom-color: rgba(255, 255, 255, 35%);
+            }}
+        """)
+        btn_limpar.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_limpar.clicked.connect(self._limpar_formulario)
+        btn_limpar.setMinimumHeight(32)
+
+        botoes_layout = QHBoxLayout()
+        botoes_layout.setSpacing(8)
+        botoes_layout.addWidget(btn_salvar)
+        botoes_layout.addWidget(btn_limpar)
+        form_layout.addLayout(botoes_layout, 3, 6, 1, 2)
 
         # Proporções das colunas - equilibradas
         form_layout.setColumnStretch(0, 1)  # labels

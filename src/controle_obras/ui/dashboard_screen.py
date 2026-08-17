@@ -135,7 +135,6 @@ class DashboardScreen(QWidget):
             ("+ Anexo", WARNING, WARNING_HOVER, self._novo_anexo),
             ("Gerar PDF", BROWN, BROWN_HOVER, self._gerar_pdf),
             ("Atualizar", DARK_GREEN, DARK_GREEN_HOVER, lambda: self.carregar(self._obra_id) if self._obra_id else None),
-            ("Limpar", TEXT_SECONDARY, TEXT_MUTED, self._limpar_selecao),
         ]
 
         for texto, cor, hover, callback in botoes:
@@ -308,6 +307,9 @@ class DashboardScreen(QWidget):
             data_str = mov["data"].strftime("%d/%m/%Y") if mov["data"] else ""
             item_data = QTableWidgetItem(data_str)
             item_data.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_data = item_data.font()
+            font_data.setBold(True)
+            item_data.setFont(font_data)
             self.table_lancamentos.setItem(row, 0, item_data)
 
             item_desc = QTableWidgetItem(mov["descricao"].upper())
@@ -327,10 +329,10 @@ class DashboardScreen(QWidget):
             self.table_lancamentos.setItem(row, 2, item_tipo)
 
             valor_item = QTableWidgetItem(f"R$ {mov['valor']:,.2f}")
-            valor_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            valor_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             font = valor_item.font()
             font.setBold(True)
-            font.setPointSize(font.pointSize() + 1)
+            font.setPointSize(font.pointSize() + 3)
             valor_item.setFont(font)
             if mov["tipo"] == "Aditivo":
                 valor_item.setForeground(QColor(INFO))
@@ -346,11 +348,6 @@ class DashboardScreen(QWidget):
                 self.table_lancamentos.clearFocus()
                 self.table_lancamentos.setCurrentItem(None)
         return super().eventFilter(obj, event)
-
-    def _limpar_selecao(self) -> None:
-        self.table_lancamentos.clearSelection()
-        self.table_lancamentos.clearFocus()
-        self.table_lancamentos.setCurrentItem(None)
 
     def _update_card(self, card: QWidget, value: str) -> None:
         for child in card.findChildren(QLabel):
