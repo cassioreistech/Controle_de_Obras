@@ -43,8 +43,8 @@ class ObrasListScreen(QWidget):
         title.setStyleSheet("font-size: 24px; font-weight: bold; color: #2c3e50;")
         title_layout.addWidget(title)
 
-        self.lbl_contagem = QLabel("0 obras")
-        self.lbl_contagem.setStyleSheet("color: #7f8c8d; font-size: 12px;")
+        self.lbl_contagem = QLabel("")
+        self.lbl_contagem.setStyleSheet("color: #7f8c8d; font-size: 12px; margin-left: 8px;")
         title_layout.addWidget(self.lbl_contagem)
         title_layout.addStretch()
 
@@ -67,9 +67,9 @@ class ObrasListScreen(QWidget):
         layout.addLayout(busca_layout)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(5)
+        self.table.setColumnCount(8)
         self.table.setHorizontalHeaderLabels(
-            ["Código", "Nome", "Cliente", "Local", "Valor Contratado"]
+            ["Código", "Nome", "Cliente", "Local", "Valor Contratado", "Status", "", ""]
         )
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
@@ -78,9 +78,24 @@ class ObrasListScreen(QWidget):
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._menu_contexto)
         self.table.doubleClicked.connect(self._duplo_clique)
+        self.table.viewport().installEventFilter(self)
+        self.table.setStyleSheet("""
+            QTableWidget::item:selected {
+                background-color: #3498db;
+                color: white;
+            }
+            QTableWidget::item:selected:!active {
+                background-color: #3498db;
+                color: white;
+            }
+        """)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.verticalHeader().setVisible(False)
         layout.addWidget(self.table)
 
         self.lbl_vazio = QLabel("Nenhuma obra cadastrada. Clique em 'Nova Obra' para começar.")
@@ -115,22 +130,73 @@ class ObrasListScreen(QWidget):
         self.table.setVisible(len(obras_filtradas) > 0)
 
         for row, obra in enumerate(obras_filtradas):
-            self.table.setItem(row, 0, QTableWidgetItem(obra.codigo))
-            self.table.setItem(row, 1, QTableWidgetItem(obra.nome))
-            self.table.setItem(row, 2, QTableWidgetItem(obra.cliente_contratante))
-            self.table.setItem(row, 3, QTableWidgetItem(obra.local_obra))
+            item_codigo = QTableWidgetItem(obra.codigo)
+            item_codigo.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.table.setItem(row, 0, item_codigo)
+
+            item_nome = QTableWidgetItem(obra.nome.upper())
+            item_nome.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_nome = item_nome.font()
+            font_nome.setBold(True)
+            item_nome.setFont(font_nome)
+            self.table.setItem(row, 1, item_nome)
+
+            item_cliente = QTableWidgetItem(obra.cliente_contratante)
+            item_cliente.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.table.setItem(row, 2, item_cliente)
+
+            item_local = QTableWidgetItem(obra.local_obra)
+            item_local.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.table.setItem(row, 3, item_local)
+
             valor_item = QTableWidgetItem(f"R$ {obra.valor_contratado_inicial:,.2f}")
+            valor_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             valor_item.setData(Qt.ItemDataRole.UserRole, float(obra.valor_contratado_inicial))
+            font = valor_item.font()
+            font.setBold(True)
+            font.setPointSize(font.pointSize() + 1)
+            valor_item.setFont(font)
+            valor_item.setForeground(Qt.GlobalColor.darkGreen)
             self.table.setItem(row, 4, valor_item)
+
+            # Status
+            status_item = QTableWidgetItem(obra.status)
+            status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_status = status_item.font()
+            font_status.setBold(True)
+            status_item.setFont(font_status)
+            # Cor baseada no status
+            if obra.status == "Concluída":
+                status_item.setForeground(Qt.GlobalColor.darkGreen)
+            elif obra.status == "Cancelada":
+                status_item.setForeground(Qt.GlobalColor.darkRed)
+            elif obra.status == "Pausada":
+                status_item.setForeground(Qt.GlobalColor.darkYellow)
+            else:
+                status_item.setForeground(Qt.GlobalColor.darkBlue)
+            self.table.setItem(row, 5, status_item)
 
             if obra.id == obra_ativa_id:
                 for col in range(self.table.columnCount()):
                     item = self.table.item(row, col)
                     if item:
-                        item.setBackground(Qt.GlobalColor.yellow)
                         item.setToolTip("Obra ativa selecionada")
 
             self.table.item(row, 0).setData(Qt.ItemDataRole.UserRole, obra.id)
+
+            # Botão Editar
+            btn_editar = QPushButton("✏️")
+            btn_editar.setToolTip("Editar obra")
+            btn_editar.setStyleSheet("padding: 4px 8px; background-color: transparent; color: #2980b9; border: none; border-radius: 3px; font-size: 14px;")
+            btn_editar.clicked.connect(lambda checked, oid=obra.id: self._parent.show_obra_form(oid))
+            self.table.setCellWidget(row, 6, btn_editar)
+
+            # Botão Excluir
+            btn_excluir = QPushButton("🗑️")
+            btn_excluir.setToolTip("Excluir obra")
+            btn_excluir.setStyleSheet("padding: 4px 8px; background-color: transparent; color: #c0392b; border: none; border-radius: 3px; font-size: 14px;")
+            btn_excluir.clicked.connect(lambda checked, oid=obra.id: self._excluir_obra(oid))
+            self.table.setCellWidget(row, 7, btn_excluir)
 
     def _duplo_clique(self) -> None:
         obra_id = self._obra_id_selecionada()
@@ -190,3 +256,12 @@ class ObrasListScreen(QWidget):
             if self._parent.config_service.obter_obra_ativa() == obra_id:
                 self._parent.set_obra_ativa(None)
             self.carregar()
+
+    def eventFilter(self, obj, event):
+        if obj == self.table.viewport() and event.type() == event.Type.MouseButtonPress:
+            index = self.table.indexAt(event.pos())
+            if not index.isValid():
+                self.table.clearSelection()
+                self.table.clearFocus()
+                self.table.setCurrentItem(None)
+        return super().eventFilter(obj, event)

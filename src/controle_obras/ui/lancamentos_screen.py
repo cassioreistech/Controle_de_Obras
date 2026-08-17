@@ -6,6 +6,7 @@ from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
@@ -111,11 +112,25 @@ class LancamentosScreen(QWidget):
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(["Data", "Descrição", "Tipo", "Origem", "Valor"])
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setStyleSheet("""
+            QTableWidget::item:selected {
+                background-color: #3498db;
+                color: white;
+            }
+            QTableWidget::item:selected:!active {
+                background-color: #3498db;
+                color: white;
+            }
+        """)
+        self.table.viewport().installEventFilter(self)
         layout.addWidget(self.table)
 
     def carregar(self, obra_id: int) -> None:
@@ -137,14 +152,33 @@ class LancamentosScreen(QWidget):
         lancamentos = self._parent.lancamento_service.listar_por_obra(self._obra_id)
         self.table.setRowCount(len(lancamentos))
         for row, lanc in enumerate(lancamentos):
-            self.table.setItem(row, 0, QTableWidgetItem(str(lanc.data_lancamento)))
-            self.table.setItem(row, 1, QTableWidgetItem(lanc.descricao))
+            item_data = QTableWidgetItem(str(lanc.data_lancamento))
+            item_data.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.table.setItem(row, 0, item_data)
+
+            item_desc = QTableWidgetItem(lanc.descricao)
+            item_desc.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.table.setItem(row, 1, item_desc)
+
             tipo_nome = self.input_tipo.itemText(
                 self.input_tipo.findData(lanc.tipo_lancamento_id)
             ) if lanc.tipo_lancamento_id else ""
-            self.table.setItem(row, 2, QTableWidgetItem(tipo_nome))
-            self.table.setItem(row, 3, QTableWidgetItem(lanc.origem_informacao))
-            self.table.setItem(row, 4, QTableWidgetItem(f"R$ {lanc.valor_total:,.2f}"))
+            item_tipo = QTableWidgetItem(tipo_nome)
+            item_tipo.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.table.setItem(row, 2, item_tipo)
+
+            item_origem = QTableWidgetItem(lanc.origem_informacao)
+            item_origem.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.table.setItem(row, 3, item_origem)
+
+            valor_item = QTableWidgetItem(f"R$ {lanc.valor_total:,.2f}")
+            valor_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font = valor_item.font()
+            font.setBold(True)
+            font.setPointSize(font.pointSize() + 1)
+            valor_item.setFont(font)
+            valor_item.setForeground(Qt.GlobalColor.darkGreen)
+            self.table.setItem(row, 4, valor_item)
 
     def _origem_alterada(self, origem: str) -> None:
         if origem in ORIGENS_COM_ANEXO_OBRIGATORIO:
@@ -271,3 +305,12 @@ class LancamentosScreen(QWidget):
         self.input_observacoes.clear()
         self._arquivo_anexo = None
         self._atualizar_label_anexo()
+
+    def eventFilter(self, obj, event):
+        if obj == self.table.viewport() and event.type() == event.Type.MouseButtonPress:
+            index = self.table.indexAt(event.pos())
+            if not index.isValid():
+                self.table.clearSelection()
+                self.table.clearFocus()
+                self.table.setCurrentItem(None)
+        return super().eventFilter(obj, event)

@@ -126,13 +126,13 @@ class AppContainer(QMainWindow):
         self.context_label.setStyleSheet("font-size: 12px; color: #bdc3c7;")
         layout.addWidget(self.context_label, 1)
 
-        self.btn_obras = QPushButton("Obras")
-        self.btn_obras.clicked.connect(self.show_obras_list)
-        layout.addWidget(self.btn_obras)
-
         self.btn_dashboard = QPushButton("Dashboard")
         self.btn_dashboard.clicked.connect(self.show_dashboard)
         layout.addWidget(self.btn_dashboard)
+
+        self.btn_obras = QPushButton("Obras")
+        self.btn_obras.clicked.connect(self.show_obras_list)
+        layout.addWidget(self.btn_obras)
 
         self.btn_lancamentos = QPushButton("Lançamentos")
         self.btn_lancamentos.clicked.connect(self.show_lancamentos)
