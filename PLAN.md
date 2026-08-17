@@ -51,6 +51,7 @@ Entregar o ciclo mínimo utilizável: cadastro de empresa, obras, aditivos, lan�
 - [x] Tela de boas-vindas
 - [x] Tela de cadastro inicial da empresa
 - [x] Tela de listagem de obras
+- [x] Melhorias de usabilidade na listagem de obras (busca, ordenação, duplo clique, tooltips, menu de contexto, contagem, destaque)
 - [x] Tela de cadastro/edição de obra
 - [x] Tela de seleção ou acesso à obra ativa
 - [x] Dashboard da obra
