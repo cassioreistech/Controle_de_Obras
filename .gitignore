@@ -1,0 +1,16 @@
+# ECC / OpenCode
+.claude/rules/ecc/
+.opencode/session_state.json
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+data/app.db
+data/backups/
+data/backup_history.json
+storage/anexos/*
+reports/obras/*
+!storage/anexos/.gitkeep
+!reports/obras/.gitkeep
