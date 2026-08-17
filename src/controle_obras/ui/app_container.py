@@ -434,7 +434,7 @@ class AppContainer(QMainWindow):
 
         info_software = QLabel(
             "<b>Versão:</b> 1.0.0<br>"
-            "<b>Desenvolvido por:</b> Cassio Vicente<br>"
+            "<b>Desenvolvido por:</b> CASSIO REIS TECH<br>"
             "<b>Tecnologias:</b> Python, PySide6, SQLite<br>"
             "<b>Ano:</b> 2026"
         )

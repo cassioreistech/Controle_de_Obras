@@ -78,7 +78,7 @@ mypy src
 
 ## Autor
 
-**Cassio Vicente** — cassioreistech
+**CASSIO REIS TECH** — cassioreistech
 
 ## Licença
 
