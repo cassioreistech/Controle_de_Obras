@@ -31,76 +31,32 @@ from PySide6.QtWidgets import (
 if TYPE_CHECKING:
     from controle_obras.ui.app_container import AppContainer
 
-
-# Paleta de cores consistente
-CORES = {
-    "primaria": "#2c3e50",
-    "secundaria": "#34495e",
-    "sucesso": "#27ae60",
-    "info": "#2980b9",
-    "alerta": "#f39c12",
-    "perigo": "#e74c3c",
-    "fundo": "#f8f9fa",
-    "fundo_card": "#ffffff",
-    "borda": "#dee2e6",
-    "texto": "#2c3e50",
-    "texto_secundario": "#6c757d",
-    "aditivo": "#8e44ad",
-}
-
-ESTILO_BOTAO = """
-    QPushButton {{
-        padding: 10px 20px;
-        background-color: {cor};
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-weight: bold;
-        font-size: 13px;
-        min-width: 100px;
-    }}
-    QPushButton:hover {{
-        background-color: {cor_hover};
-    }}
-    QPushButton:pressed {{
-        background-color: {cor_pressed};
-    }}
-"""
-
-ESTILO_TABELA = """
-    QTableWidget {{
-        background-color: #ffffff;
-        border: 1px solid #dee2e6;
-        border-radius: 6px;
-        gridline-color: #e9ecef;
-        font-size: 13px;
-        selection-background-color: transparent;
-    }}
-    QTableWidget::item {{
-        padding: 8px 12px;
-        border-bottom: 1px solid #e9ecef;
-    }}
-    QTableWidget::item:selected {{
-        background-color: #e3f2fd;
-        color: #1565c0;
-    }}
-    QTableWidget::item:hover {{
-        background-color: #f5f5f5;
-    }}
-    QHeaderView::section {{
-        background-color: {cor_header};
-        color: white;
-        font-weight: bold;
-        font-size: 12px;
-        padding: 10px 12px;
-        border: none;
-        border-right: 1px solid rgba(255,255,255,0.1);
-        border-bottom: 2px solid rgba(255,255,255,0.2);
-    }}
-    QHeaderView::section:last {{
-        border-right: none;
-    }}
-"""
+from controle_obras.ui.styles import (
+    BACKGROUND,
+    BORDER,
+    DANGER,
+    DANGER_HOVER,
+    DANGER_LIGHT,
+    INFO,
+    INFO_HOVER,
+    INFO_LIGHT,
+    PRIMARY,
+    PRIMARY_HOVER,
+    PRIMARY_PRESSED,
+    SUCCESS,
+    SUCCESS_HOVER,
+    SUCCESS_LIGHT,
+    SURFACE,
+    SURFACE_ALT,
+    TEXT_MUTED,
+    TEXT_PRIMARY,
+    TEXT_SECONDARY,
+    get_action_button_style,
+    get_card_style,
+    get_input_style,
+    get_screen_title_style,
+    get_table_style,
+)
 
 
 class DashboardScreen(QWidget):
@@ -110,13 +66,13 @@ class DashboardScreen(QWidget):
         super().__init__()
         self._parent = parent
         self._obra_id: int | None = None
-        self.setStyleSheet(f"background-color: {CORES['fundo']};")
+        self.setStyleSheet(f"background-color: {BACKGROUND};")
         self._init_ui()
 
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setSpacing(8)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(12)
+        layout.setContentsMargins(16, 16, 16, 16)
 
         # Cards de resumo
         layout.addWidget(self._build_cards())
@@ -130,19 +86,19 @@ class DashboardScreen(QWidget):
     def _build_cards(self) -> QWidget:
         cards_widget = QWidget()
         cards_layout = QGridLayout(cards_widget)
-        cards_layout.setSpacing(8)
+        cards_layout.setSpacing(12)
 
         self.card_contratado = self._create_card(
-            "Valor Contratado", "R$ 0,00", CORES["sucesso"], "#e8f5e9"
+            "Valor Contratado", "R$ 0,00", SUCCESS, SUCCESS_LIGHT
         )
         self.card_aditivos = self._create_card(
-            "Total de Aditivos", "R$ 0,00", CORES["info"], "#e3f2fd"
+            "Total de Aditivos", "R$ 0,00", INFO, INFO_LIGHT
         )
         self.card_gasto = self._create_card(
-            "Total Gasto", "R$ 0,00", CORES["perigo"], "#ffebee"
+            "Total Gasto", "R$ 0,00", DANGER, DANGER_LIGHT
         )
         self.card_liquido = self._create_card(
-            "Valor Líquido", "R$ 0,00", CORES["primaria"], "#e8eaf6"
+            "Valor Líquido", "R$ 0,00", PRIMARY, SURFACE_ALT
         )
 
         cards_layout.addWidget(self.card_contratado, 0, 0)
@@ -156,30 +112,29 @@ class DashboardScreen(QWidget):
         acoes = QFrame()
         acoes.setStyleSheet(f"""
             QFrame {{
-                background-color: {CORES['fundo_card']};
-                border: 1px solid {CORES['borda']};
+                background-color: {SURFACE};
+                border: 1px solid {BORDER};
                 border-radius: 8px;
-                padding: 10px;
             }}
         """)
         layout = QHBoxLayout(acoes)
-        layout.setSpacing(12)
+        layout.setSpacing(10)
         layout.setContentsMargins(16, 12, 16, 12)
 
         layout.addStretch()
 
         botoes = [
-            ("+ Aditivo", CORES["info"], "#2471a3", "#1a5276", self._novo_aditivo),
-            ("+ Lançamento", CORES["sucesso"], "#229954", "#1e8449", self._novo_lancamento),
-            ("+ Anexo", CORES["aditivo"], "#7d3c98", "#6c3483", self._novo_anexo),
-            ("Gerar PDF", CORES["primaria"], "#1a252f", "#151d26", self._gerar_pdf),
-            ("Atualizar", "#17a2b8", "#138496", "#117a8b", lambda: self.carregar(self._obra_id) if self._obra_id else None),
-            ("Limpar", CORES["texto_secundario"], "#5a6268", "#4e555b", self._limpar_selecao),
+            ("+ Aditivo", INFO, INFO_HOVER, self._novo_aditivo),
+            ("+ Lançamento", SUCCESS, SUCCESS_HOVER, self._novo_lancamento),
+            ("+ Anexo", PRIMARY, PRIMARY_HOVER, self._novo_anexo),
+            ("Gerar PDF", PRIMARY, PRIMARY_HOVER, self._gerar_pdf),
+            ("Atualizar", TEXT_SECONDARY, TEXT_MUTED, lambda: self.carregar(self._obra_id) if self._obra_id else None),
+            ("Limpar", TEXT_SECONDARY, TEXT_MUTED, self._limpar_selecao),
         ]
 
-        for texto, cor, hover, pressed, callback in botoes:
+        for texto, cor, hover, callback in botoes:
             btn = QPushButton(texto)
-            btn.setStyleSheet(ESTILO_BOTAO.format(cor=cor, cor_hover=hover, cor_pressed=pressed))
+            btn.setStyleSheet(get_action_button_style(cor, hover))
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.clicked.connect(callback)
             layout.addWidget(btn)
@@ -196,15 +151,15 @@ class DashboardScreen(QWidget):
         header_layout = QHBoxLayout()
         titulo = QLabel("Últimos Movimentos")
         titulo.setStyleSheet(f"""
-            font-size: 16px;
-            font-weight: bold;
-            color: {CORES['texto']};
+            font-size: 15px;
+            font-weight: 600;
+            color: {TEXT_PRIMARY};
         """)
         header_layout.addWidget(titulo)
         header_layout.addStretch()
 
         self.lbl_total = QLabel("")
-        self.lbl_total.setStyleSheet(f"color: {CORES['texto_secundario']}; font-size: 12px;")
+        self.lbl_total.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px;")
         header_layout.addWidget(self.lbl_total)
 
         layout.addLayout(header_layout)
@@ -224,7 +179,7 @@ class DashboardScreen(QWidget):
         self.table_lancamentos.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table_lancamentos.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.table_lancamentos.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
-        self.table_lancamentos.setStyleSheet(ESTILO_TABELA.format(cor_header=CORES["primaria"]))
+        self.table_lancamentos.setStyleSheet(get_table_style(PRIMARY))
         self.table_lancamentos.viewport().installEventFilter(self)
 
         layout.addWidget(self.table_lancamentos)
@@ -234,65 +189,52 @@ class DashboardScreen(QWidget):
     def _create_card(
         self, title: str, value: str, color: str, bg_color: str
     ) -> QWidget:
-        # Container externo para efeito de sombra
+        # Container externo para sombra
         shadow_container = QWidget()
-        shadow_container.setMinimumHeight(105)
+        shadow_container.setMinimumHeight(100)
 
-        # Card principal com glassmorphism premium
+        # Card principal
         card = QFrame(shadow_container)
         card.setObjectName("card")
         card.setStyleSheet(f"""
             QFrame#card {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 rgba(255, 255, 255, 0.98),
-                    stop:0.5 rgba(255, 255, 255, 0.95),
-                    stop:1 rgba(248, 250, 252, 0.92));
-                border: 1px solid rgba(226, 232, 240, 0.8);
-                border-radius: 16px;
-                border-left: 5px solid {color};
+                background-color: {bg_color};
+                border: 1px solid {BORDER};
+                border-radius: 12px;
+                border-left: 4px solid {color};
             }}
             QFrame#card:hover {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 rgba(255, 255, 255, 1.0),
-                    stop:0.5 rgba(255, 255, 255, 0.98),
-                    stop:1 rgba(248, 250, 252, 0.95));
-                border-left-width: 7px;
+                border-left-width: 5px;
             }}
         """)
 
-        # Sombra 3D premium
+        # Sombra sutil
         shadow = QGraphicsDropShadowEffect()
-        shadow.setBlurRadius(24)
-        shadow.setXOffset(4)
-        shadow.setYOffset(8)
-        shadow.setColor(QColor(0, 0, 0, 50))
+        shadow.setBlurRadius(12)
+        shadow.setXOffset(2)
+        shadow.setYOffset(3)
+        shadow.setColor(QColor(0, 0, 0, 30))
         card.setGraphicsEffect(shadow)
 
         # Layout interno
-        card.setGeometry(0, 0, 220, 105)
+        card.setGeometry(0, 0, 200, 100)
 
         layout = QVBoxLayout(shadow_container)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setContentsMargins(8, 8, 8, 8)
         layout.addWidget(card)
 
         card_layout = QVBoxLayout(card)
-        card_layout.setSpacing(10)
-        card_layout.setContentsMargins(20, 18, 20, 18)
+        card_layout.setSpacing(6)
+        card_layout.setContentsMargins(16, 14, 16, 14)
         card_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # Indicador de status (bolinha)
-        indicator = QLabel("●")
-        indicator.setStyleSheet(f"font-size: 10px; color: {color}; background: transparent; letter-spacing: 2px;")
-        indicator.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        card_layout.addWidget(indicator)
-
-        # Título com estilo profissional
+        # Título
         title_label = QLabel(title)
         title_label.setStyleSheet(f"""
             font-size: 11px;
-            font-weight: 700;
-            color: #64748B;
-            letter-spacing: 1.5px;
+            font-weight: 600;
+            color: {TEXT_SECONDARY};
+            letter-spacing: 0.5px;
             text-transform: uppercase;
             background: transparent;
             padding: 0;
@@ -301,26 +243,19 @@ class DashboardScreen(QWidget):
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         card_layout.addWidget(title_label)
 
-        # Valor principal com destaque premium
+        # Valor principal
         value_label = QLabel(value)
         value_label.setStyleSheet(f"""
-            font-size: 24px;
-            font-weight: 800;
+            font-size: 22px;
+            font-weight: 700;
             color: {color};
             background: transparent;
-            letter-spacing: -0.5px;
             padding: 0;
             margin: 0;
         """)
         value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         value_label.setProperty("value_label", True)
         card_layout.addWidget(value_label)
-
-        # Linha decorativa sutil
-        line = QLabel("─" * 20)
-        line.setStyleSheet(f"color: {color}40; background: transparent; font-size: 8px;")
-        line.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        card_layout.addWidget(line)
 
         return shadow_container
 
@@ -376,7 +311,7 @@ class DashboardScreen(QWidget):
             item_tipo = QTableWidgetItem(mov["tipo"])
             item_tipo.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             if mov["tipo"] == "Aditivo":
-                item_tipo.setForeground(QColor(CORES["aditivo"]))
+                item_tipo.setForeground(QColor(INFO))
                 font = item_tipo.font()
                 font.setBold(True)
                 item_tipo.setFont(font)
@@ -389,9 +324,9 @@ class DashboardScreen(QWidget):
             font.setPointSize(font.pointSize() + 1)
             valor_item.setFont(font)
             if mov["tipo"] == "Aditivo":
-                valor_item.setForeground(QColor(CORES["aditivo"]))
+                valor_item.setForeground(QColor(INFO))
             else:
-                valor_item.setForeground(QColor(CORES["sucesso"]))
+                valor_item.setForeground(QColor(SUCCESS))
             self.table_lancamentos.setItem(row, 3, valor_item)
 
     def eventFilter(self, obj, event):
@@ -423,20 +358,14 @@ class DashboardScreen(QWidget):
         dialog.setMinimumWidth(450)
         dialog.setStyleSheet(f"""
             QDialog {{
-                background-color: {CORES['fundo']};
+                background-color: {BACKGROUND};
             }}
             QLabel {{
                 font-size: 13px;
-                color: {CORES['texto']};
+                color: {TEXT_PRIMARY};
             }}
             QLineEdit, QDateEdit {{
-                padding: 8px;
-                border: 1px solid {CORES['borda']};
-                border-radius: 4px;
-                font-size: 13px;
-            }}
-            QLineEdit:focus, QDateEdit:focus {{
-                border-color: {CORES['info']};
+                {get_input_style()}
             }}
         """)
 
@@ -466,13 +395,9 @@ class DashboardScreen(QWidget):
         buttons.rejected.connect(dialog.reject)
 
         btn_ok = buttons.button(QDialogButtonBox.StandardButton.Ok)
-        btn_ok.setStyleSheet(ESTILO_BOTAO.format(
-            cor=CORES["sucesso"], cor_hover="#229954", cor_pressed="#1e8449"
-        ))
+        btn_ok.setStyleSheet(get_action_button_style(SUCCESS, SUCCESS_HOVER))
         btn_cancel = buttons.button(QDialogButtonBox.StandardButton.Cancel)
-        btn_cancel.setStyleSheet(ESTILO_BOTAO.format(
-            cor=CORES["texto_secundario"], cor_hover="#5a6268", cor_pressed="#4e555b"
-        ))
+        btn_cancel.setStyleSheet(get_action_button_style(TEXT_SECONDARY, TEXT_MUTED))
 
         form.addRow(buttons)
 
@@ -556,7 +481,7 @@ class DashboardScreen(QWidget):
         dialog.setMinimumSize(650, 400)
         dialog.setStyleSheet(f"""
             QDialog {{
-                background-color: {CORES['fundo']};
+                background-color: {BACKGROUND};
             }}
         """)
 
@@ -578,7 +503,7 @@ class DashboardScreen(QWidget):
         table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
         table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
-        table.setStyleSheet(ESTILO_TABELA.format(cor_header=CORES["info"]))
+        table.setStyleSheet(get_table_style(INFO))
 
         aditivos = self._parent.aditivo_service.listar_por_obra(self._obra_id)
         table.setRowCount(len(aditivos))
@@ -597,7 +522,7 @@ class DashboardScreen(QWidget):
             font = valor_item.font()
             font.setBold(True)
             valor_item.setFont(font)
-            valor_item.setForeground(QColor(CORES["aditivo"]))
+            valor_item.setForeground(QColor(INFO))
             table.setItem(row, 2, valor_item)
 
             item_obs = QTableWidgetItem(adit.observacoes or "")
@@ -610,13 +535,13 @@ class DashboardScreen(QWidget):
                 QPushButton {{
                     padding: 4px 8px;
                     background-color: transparent;
-                    color: {CORES['perigo']};
+                    color: {DANGER};
                     border: none;
                     border-radius: 3px;
                     font-size: 14px;
                 }}
                 QPushButton:hover {{
-                    background-color: #ffebee;
+                    background-color: {DANGER_LIGHT};
                 }}
             """)
             btn_excluir.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -626,9 +551,7 @@ class DashboardScreen(QWidget):
         layout.addWidget(table)
 
         btn_fechar = QPushButton("Fechar")
-        btn_fechar.setStyleSheet(ESTILO_BOTAO.format(
-            cor=CORES["texto_secundario"], cor_hover="#5a6268", cor_pressed="#4e555b"
-        ))
+        btn_fechar.setStyleSheet(get_action_button_style(TEXT_SECONDARY, TEXT_MUTED))
         btn_fechar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_fechar.clicked.connect(dialog.accept)
         layout.addWidget(btn_fechar)

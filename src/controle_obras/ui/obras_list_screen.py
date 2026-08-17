@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
@@ -25,6 +25,28 @@ from controle_obras.domain.models import Obra
 if TYPE_CHECKING:
     from controle_obras.ui.app_container import AppContainer
 
+from controle_obras.ui.styles import (
+    BACKGROUND,
+    BORDER,
+    DANGER,
+    DANGER_HOVER,
+    INFO,
+    INFO_HOVER,
+    PRIMARY,
+    SUCCESS,
+    SUCCESS_HOVER,
+    SURFACE,
+    TEXT_MUTED,
+    TEXT_PRIMARY,
+    TEXT_SECONDARY,
+    get_action_button_style,
+    get_input_style,
+    get_primary_button_style,
+    get_screen_title_style,
+    get_success_button_style,
+    get_table_style,
+)
+
 
 class ObrasListScreen(QWidget):
     """Tela para listar, selecionar e gerenciar obras."""
@@ -37,22 +59,23 @@ class ObrasListScreen(QWidget):
 
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
+        layout.setSpacing(12)
+        layout.setContentsMargins(16, 16, 16, 16)
 
         title_layout = QHBoxLayout()
         title = QLabel("Obras Cadastradas")
-        title.setStyleSheet("font-size: 24px; font-weight: bold; color: #2c3e50;")
+        title.setStyleSheet(get_screen_title_style())
         title_layout.addWidget(title)
 
         self.lbl_contagem = QLabel("")
-        self.lbl_contagem.setStyleSheet("color: #7f8c8d; font-size: 12px; margin-left: 8px;")
+        self.lbl_contagem.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 12px; margin-left: 8px;")
         title_layout.addWidget(self.lbl_contagem)
         title_layout.addStretch()
 
         btn_nova = QPushButton("Nova Obra")
         btn_nova.setToolTip("Cadastrar uma nova obra")
-        btn_nova.setStyleSheet(
-            "padding: 10px 24px; background-color: #2980b9; color: white;"
-        )
+        btn_nova.setStyleSheet(get_success_button_style())
+        btn_nova.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_nova.clicked.connect(lambda: self._parent.show_obra_form())
         title_layout.addWidget(btn_nova)
 
@@ -63,6 +86,7 @@ class ObrasListScreen(QWidget):
         self.input_busca.setPlaceholderText("Buscar por código, nome, cliente ou local...")
         self.input_busca.textChanged.connect(self._aplicar_filtro)
         self.input_busca.setToolTip("Digite para filtrar a lista de obras")
+        self.input_busca.setStyleSheet(get_input_style())
         busca_layout.addWidget(self.input_busca)
         layout.addLayout(busca_layout)
 
@@ -79,16 +103,7 @@ class ObrasListScreen(QWidget):
         self.table.customContextMenuRequested.connect(self._menu_contexto)
         self.table.doubleClicked.connect(self._duplo_clique)
         self.table.viewport().installEventFilter(self)
-        self.table.setStyleSheet("""
-            QTableWidget::item:selected {
-                background-color: #3498db;
-                color: white;
-            }
-            QTableWidget::item:selected:!active {
-                background-color: #3498db;
-                color: white;
-            }
-        """)
+        self.table.setStyleSheet(get_table_style(PRIMARY))
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
@@ -100,7 +115,7 @@ class ObrasListScreen(QWidget):
 
         self.lbl_vazio = QLabel("Nenhuma obra cadastrada. Clique em 'Nova Obra' para começar.")
         self.lbl_vazio.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.lbl_vazio.setStyleSheet("color: #7f8c8d; font-size: 14px; padding: 32px;")
+        self.lbl_vazio.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 14px; padding: 32px;")
         self.lbl_vazio.setVisible(False)
         layout.addWidget(self.lbl_vazio)
 
@@ -156,7 +171,7 @@ class ObrasListScreen(QWidget):
             font.setBold(True)
             font.setPointSize(font.pointSize() + 1)
             valor_item.setFont(font)
-            valor_item.setForeground(Qt.GlobalColor.darkGreen)
+            valor_item.setForeground(QColor(SUCCESS))
             self.table.setItem(row, 4, valor_item)
 
             # Status
@@ -167,13 +182,13 @@ class ObrasListScreen(QWidget):
             status_item.setFont(font_status)
             # Cor baseada no status
             if obra.status == "Concluída":
-                status_item.setForeground(Qt.GlobalColor.darkGreen)
+                status_item.setForeground(QColor(SUCCESS))
             elif obra.status == "Cancelada":
-                status_item.setForeground(Qt.GlobalColor.darkRed)
+                status_item.setForeground(QColor(DANGER))
             elif obra.status == "Pausada":
-                status_item.setForeground(Qt.GlobalColor.darkYellow)
+                status_item.setForeground(QColor("#D97706"))
             else:
-                status_item.setForeground(Qt.GlobalColor.darkBlue)
+                status_item.setForeground(QColor(INFO))
             self.table.setItem(row, 5, status_item)
 
             if obra.id == obra_ativa_id:
@@ -187,14 +202,40 @@ class ObrasListScreen(QWidget):
             # Botão Editar
             btn_editar = QPushButton("✏️")
             btn_editar.setToolTip("Editar obra")
-            btn_editar.setStyleSheet("padding: 4px 8px; background-color: transparent; color: #2980b9; border: none; border-radius: 3px; font-size: 14px;")
+            btn_editar.setStyleSheet(f"""
+                QPushButton {{
+                    padding: 4px 8px;
+                    background-color: transparent;
+                    color: {INFO};
+                    border: none;
+                    border-radius: 3px;
+                    font-size: 14px;
+                }}
+                QPushButton:hover {{
+                    background-color: {INFO_LIGHT};
+                }}
+            """)
+            btn_editar.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_editar.clicked.connect(lambda checked, oid=obra.id: self._parent.show_obra_form(oid))
             self.table.setCellWidget(row, 6, btn_editar)
 
             # Botão Excluir
             btn_excluir = QPushButton("🗑️")
             btn_excluir.setToolTip("Excluir obra")
-            btn_excluir.setStyleSheet("padding: 4px 8px; background-color: transparent; color: #c0392b; border: none; border-radius: 3px; font-size: 14px;")
+            btn_excluir.setStyleSheet(f"""
+                QPushButton {{
+                    padding: 4px 8px;
+                    background-color: transparent;
+                    color: {DANGER};
+                    border: none;
+                    border-radius: 3px;
+                    font-size: 14px;
+                }}
+                QPushButton:hover {{
+                    background-color: {DANGER_LIGHT};
+                }}
+            """)
+            btn_excluir.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_excluir.clicked.connect(lambda checked, oid=obra.id: self._excluir_obra(oid))
             self.table.setCellWidget(row, 7, btn_excluir)
 

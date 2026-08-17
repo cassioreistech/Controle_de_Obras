@@ -43,6 +43,15 @@ from controle_obras.ui.empresa_screen import EmpresaScreen
 from controle_obras.ui.lancamentos_screen import LancamentosScreen
 from controle_obras.ui.obra_form_screen import ObraFormScreen
 from controle_obras.ui.obras_list_screen import ObrasListScreen
+from controle_obras.ui.styles import (
+    BACKGROUND,
+    PRIMARY,
+    SURFACE,
+    TEXT_PRIMARY,
+    get_combo_header_style,
+    get_header_button_style,
+    get_header_style,
+)
 from controle_obras.ui.welcome_screen import WelcomeScreen
 
 
@@ -116,35 +125,24 @@ class AppContainer(QMainWindow):
 
     def _build_header(self) -> QWidget:
         header = QWidget()
-        header.setFixedHeight(48)
-        header.setStyleSheet("""
-            QWidget {
-                background-color: #2c3e50;
-                color: white;
-            }
-            QPushButton {
-                min-height: 28px;
-                max-height: 30px;
-                padding: 2px 10px;
-                background-color: rgba(255, 255, 255, 0.1);
-                color: white;
-                border: none;
-                border-radius: 3px;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background-color: rgba(255, 255, 255, 0.2);
-            }
-        """)
+        header.setFixedHeight(50)
+        header.setStyleSheet(get_header_style())
+
         main_layout = QHBoxLayout(header)
-        main_layout.setContentsMargins(12, 0, 12, 0)
+        main_layout.setContentsMargins(16, 0, 16, 0)
         main_layout.setSpacing(0)
 
         # Grupo esquerdo: título
         left_layout = QHBoxLayout()
-        left_layout.setSpacing(6)
+        left_layout.setSpacing(8)
         self.title_label = QLabel("Controle de Obras")
-        self.title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: white; letter-spacing: 1px; padding: 0;")
+        self.title_label.setStyleSheet(f"""
+            font-size: 16px;
+            font-weight: 700;
+            color: {SURFACE};
+            letter-spacing: 0.5px;
+            padding: 0;
+        """)
         left_layout.addWidget(self.title_label)
         main_layout.addLayout(left_layout)
 
@@ -152,37 +150,23 @@ class AppContainer(QMainWindow):
 
         # Grupo central: seletor da obra (centralizado)
         center_layout = QHBoxLayout()
-        center_layout.setSpacing(8)
+        center_layout.setSpacing(10)
 
         lbl_obra = QLabel("OBRA:")
-        lbl_obra.setStyleSheet("font-size: 14px; padding: 0; color: #e74c3c; font-weight: bold;")
+        lbl_obra.setStyleSheet(f"""
+            font-size: 12px;
+            font-weight: 600;
+            padding: 0;
+            color: {SURFACE};
+            letter-spacing: 0.5px;
+        """)
         lbl_obra.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         center_layout.addWidget(lbl_obra)
 
         self.combo_obras = QComboBox()
         self.combo_obras.setToolTip("Selecionar obra ativa")
         self.combo_obras.currentIndexChanged.connect(self._obra_selecionada)
-        self.combo_obras.setStyleSheet("""
-            QComboBox {
-                min-height: 32px;
-                max-height: 34px;
-                padding: 4px 8px;
-                border: 1px solid #27ae60;
-                border-radius: 4px;
-                background-color: #34495e;
-                color: #FFFFFF;
-                font-size: 14px;
-                font-weight: bold;
-                min-width: 250px;
-            }
-            QComboBox:hover {
-                border-color: #2ecc71;
-            }
-            QComboBox::drop-down {
-                border: none;
-                padding-right: 6px;
-            }
-        """)
+        self.combo_obras.setStyleSheet(get_combo_header_style())
         center_layout.addWidget(self.combo_obras)
 
         main_layout.addLayout(center_layout)
@@ -191,26 +175,30 @@ class AppContainer(QMainWindow):
 
         # Grupo direito: navegação
         right_layout = QHBoxLayout()
-        right_layout.setSpacing(6)
+        right_layout.setSpacing(4)
 
-        separator = QLabel("|")
-        separator.setStyleSheet("color: rgba(255,255,255,0.3); padding: 0 4px;")
+        separator = QLabel("│")
+        separator.setStyleSheet(f"color: rgba(255,255,255,0.2); padding: 0 6px; font-size: 16px;")
         right_layout.addWidget(separator)
 
         self.btn_dashboard = QPushButton("Dashboard")
         self.btn_dashboard.clicked.connect(self.show_dashboard)
+        self.btn_dashboard.setStyleSheet(get_header_button_style())
         right_layout.addWidget(self.btn_dashboard)
 
         self.btn_obras = QPushButton("Obras")
         self.btn_obras.clicked.connect(self.show_obras_list)
+        self.btn_obras.setStyleSheet(get_header_button_style())
         right_layout.addWidget(self.btn_obras)
 
         self.btn_backup = QPushButton("Backup")
         self.btn_backup.clicked.connect(self._gerar_backup)
+        self.btn_backup.setStyleSheet(get_header_button_style())
         right_layout.addWidget(self.btn_backup)
 
         self.btn_restore = QPushButton("Restaurar")
         self.btn_restore.clicked.connect(self._restaurar_backup)
+        self.btn_restore.setStyleSheet(get_header_button_style())
         right_layout.addWidget(self.btn_restore)
 
         main_layout.addLayout(right_layout)
