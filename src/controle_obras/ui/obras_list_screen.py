@@ -106,12 +106,17 @@ class ObrasListScreen(QWidget):
         self.table.doubleClicked.connect(self._duplo_clique)
         self.table.viewport().installEventFilter(self)
         self.table.setStyleSheet(get_table_style(PRIMARY))
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setStretchLastSection(False)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
+        self.table.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeMode.Fixed)
+        self.table.horizontalHeader().resizeSection(6, 70)
+        self.table.horizontalHeader().resizeSection(7, 75)
         self.table.verticalHeader().setVisible(False)
         layout.addWidget(self.table)
 
@@ -202,19 +207,19 @@ class ObrasListScreen(QWidget):
             self.table.item(row, 0).setData(Qt.ItemDataRole.UserRole, obra.id)
 
             # Botão Editar
-            btn_editar = QPushButton("✏️")
+            btn_editar = QPushButton("✏")
             btn_editar.setToolTip("Editar obra")
             btn_editar.setStyleSheet(f"""
                 QPushButton {{
                     padding: 4px 8px;
-                    background-color: transparent;
-                    color: {INFO};
+                    background-color: {INFO};
+                    color: white;
                     border: none;
-                    border-radius: 3px;
+                    border-radius: 4px;
                     font-size: 14px;
                 }}
                 QPushButton:hover {{
-                    background-color: {INFO_LIGHT};
+                    background-color: {INFO_HOVER};
                 }}
             """)
             btn_editar.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -222,19 +227,19 @@ class ObrasListScreen(QWidget):
             self.table.setCellWidget(row, 6, btn_editar)
 
             # Botão Excluir
-            btn_excluir = QPushButton("🗑️")
+            btn_excluir = QPushButton("🗑")
             btn_excluir.setToolTip("Excluir obra")
             btn_excluir.setStyleSheet(f"""
                 QPushButton {{
                     padding: 4px 8px;
-                    background-color: transparent;
-                    color: {DANGER};
+                    background-color: {DANGER};
+                    color: white;
                     border: none;
-                    border-radius: 3px;
+                    border-radius: 4px;
                     font-size: 14px;
                 }}
                 QPushButton:hover {{
-                    background-color: {DANGER_LIGHT};
+                    background-color: {DANGER_HOVER};
                 }}
             """)
             btn_excluir.setCursor(Qt.CursorShape.PointingHandCursor)

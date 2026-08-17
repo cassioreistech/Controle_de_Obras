@@ -34,8 +34,10 @@ from controle_obras.ui.styles import (
     BACKGROUND,
     BORDER,
     DANGER,
+    DANGER_HOVER,
     DANGER_LIGHT,
     INFO,
+    INFO_HOVER,
     INFO_LIGHT,
     PRIMARY,
     SUCCESS,
@@ -211,9 +213,13 @@ class LancamentosScreen(QWidget):
         form_layout.addWidget(lbl("Tipo:"), 0, 2)
         form_layout.addWidget(self.input_tipo, 0, 3, 1, 3)
 
-        # Linha 2: Descrição (largura completa)
+        # Linha 2: Descrição + Origem + Anexo (mesma linha)
         form_layout.addWidget(lbl("Descrição *:"), 1, 0)
-        form_layout.addWidget(self.input_descricao, 1, 1, 1, 5)
+        form_layout.addWidget(self.input_descricao, 1, 1, 1, 3)
+        form_layout.addWidget(lbl("Origem:"), 1, 4)
+        form_layout.addWidget(self.input_origem, 1, 5)
+        form_layout.addWidget(lbl("Anexo:"), 1, 6)
+        form_layout.addLayout(anexo_layout, 1, 7)
 
         # Linha 3: Qtd + Unidade + Valor Unitário + Valor Total
         form_layout.addWidget(lbl("Qtd:"), 2, 0)
@@ -225,15 +231,9 @@ class LancamentosScreen(QWidget):
         form_layout.addWidget(lbl("Valor Total *:"), 2, 6)
         form_layout.addWidget(self.input_valor_total, 2, 7)
 
-        # Linha 4: Origem + Anexo
-        form_layout.addWidget(lbl("Origem:"), 3, 0)
-        form_layout.addWidget(self.input_origem, 3, 1)
-        form_layout.addWidget(lbl("Anexo:"), 3, 2)
-        form_layout.addLayout(anexo_layout, 3, 3, 1, 5)
-
-        # Linha 5: Observações + Salvar
-        form_layout.addWidget(lbl("Observações:"), 4, 0)
-        form_layout.addWidget(self.input_observacoes, 4, 1, 1, 5)
+        # Linha 4: Observações + Salvar
+        form_layout.addWidget(lbl("Observações:"), 3, 0)
+        form_layout.addWidget(self.input_observacoes, 3, 1, 1, 5)
 
         btn_salvar = QPushButton("Salvar Lançamento")
         btn_salvar.setToolTip("Salvar o lançamento e anexar arquivo se houver")
@@ -241,17 +241,17 @@ class LancamentosScreen(QWidget):
         btn_salvar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_salvar.clicked.connect(self._salvar)
         btn_salvar.setMinimumHeight(32)
-        form_layout.addWidget(btn_salvar, 4, 6, 1, 2)
+        form_layout.addWidget(btn_salvar, 3, 6, 1, 2)
 
         # Proporções das colunas - equilibradas
         form_layout.setColumnStretch(0, 1)  # labels
-        form_layout.setColumnStretch(1, 3)  # Data
+        form_layout.setColumnStretch(1, 3)  # Data/Descrição
         form_layout.setColumnStretch(2, 1)  # labels
-        form_layout.setColumnStretch(3, 3)  # Tipo
+        form_layout.setColumnStretch(3, 3)  # Tipo/Unidade
         form_layout.setColumnStretch(4, 1)  # labels
-        form_layout.setColumnStretch(5, 2)  # Unidade
+        form_layout.setColumnStretch(5, 2)  # Origem/Valor Unit.
         form_layout.setColumnStretch(6, 1)  # labels
-        form_layout.setColumnStretch(7, 2)  # Valor
+        form_layout.setColumnStretch(7, 2)  # Anexo/Valor Total
 
         panel_layout.addLayout(form_layout)
 
@@ -339,16 +339,42 @@ class LancamentosScreen(QWidget):
             self.table.setItem(row, 4, valor_item)
 
             # Botão Editar
-            btn_editar = QPushButton("✏️")
+            btn_editar = QPushButton("✏")
             btn_editar.setToolTip("Editar lançamento")
-            btn_editar.setStyleSheet("padding: 4px 8px; background-color: transparent; color: #2980b9; border: none; border-radius: 3px; font-size: 14px;")
+            btn_editar.setStyleSheet(f"""
+                QPushButton {{
+                    padding: 4px 8px;
+                    background-color: {INFO};
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 14px;
+                }}
+                QPushButton:hover {{
+                    background-color: {INFO_HOVER};
+                }}
+            """)
+            btn_editar.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_editar.clicked.connect(lambda checked, lid=lanc.id: self._editar_lancamento(lid))
             self.table.setCellWidget(row, 5, btn_editar)
 
             # Botão Excluir
-            btn_excluir = QPushButton("🗑️")
+            btn_excluir = QPushButton("🗑")
             btn_excluir.setToolTip("Excluir lançamento")
-            btn_excluir.setStyleSheet("padding: 4px 8px; background-color: transparent; color: #c0392b; border: none; border-radius: 3px; font-size: 14px;")
+            btn_excluir.setStyleSheet(f"""
+                QPushButton {{
+                    padding: 4px 8px;
+                    background-color: {DANGER};
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 14px;
+                }}
+                QPushButton:hover {{
+                    background-color: {DANGER_HOVER};
+                }}
+            """)
+            btn_excluir.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_excluir.clicked.connect(lambda checked, lid=lanc.id: self._excluir_lancamento(lid))
             self.table.setCellWidget(row, 6, btn_excluir)
 
