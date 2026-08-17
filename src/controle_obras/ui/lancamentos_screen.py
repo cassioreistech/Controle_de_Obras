@@ -70,52 +70,91 @@ class LancamentosScreen(QWidget):
         self._init_ui()
 
     def _init_ui(self) -> None:
-        layout = QVBoxLayout(self)
-        layout.setSpacing(12)
-        layout.setContentsMargins(16, 16, 16, 16)
+        # Layout principal centralizado
+        main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(12)
+        main_layout.setContentsMargins(24, 16, 24, 16)
+        main_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
+        # Painel centralizado com largura máxima
+        panel = QWidget()
+        panel.setMaximumWidth(1200)
+        panel_layout = QVBoxLayout(panel)
+        panel_layout.setSpacing(10)
+        panel_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Container centralizado
+        center_container = QHBoxLayout()
+        center_container.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        center_container.addWidget(panel)
+        main_layout.addLayout(center_container)
+
+        # Título
         title = QLabel("Lançamentos da Obra")
         title.setStyleSheet(get_screen_title_style())
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title)
+        panel_layout.addWidget(title)
 
+        # Grid do formulário
         form_layout = QGridLayout()
-        form_layout.setContentsMargins(8, 8, 8, 8)
+        form_layout.setContentsMargins(16, 12, 16, 12)
         form_layout.setHorizontalSpacing(12)
         form_layout.setVerticalSpacing(8)
 
+        # Estilo dos inputs
+        input_style = get_input_style()
+
+        # Criar campos
         self.input_data = QDateEdit()
         self.input_data.setCalendarPopup(True)
         self.input_data.setDate(date.today())
-        self.input_data.setStyleSheet(get_input_style())
+        self.input_data.setStyleSheet(input_style)
+        self.input_data.setMinimumHeight(32)
+
         self.input_tipo = QComboBox()
-        self.input_tipo.setStyleSheet(get_input_style())
+        self.input_tipo.setStyleSheet(input_style)
+        self.input_tipo.setMinimumHeight(32)
+
         self.input_descricao = QLineEdit()
-        self.input_descricao.setStyleSheet(get_input_style())
+        self.input_descricao.setStyleSheet(input_style)
+        self.input_descricao.setMinimumHeight(32)
+
         self.input_quantidade = QLineEdit()
         self.input_quantidade.setPlaceholderText("0")
         self.input_quantidade.textChanged.connect(self._auto_calcular_total)
-        self.input_quantidade.setStyleSheet(get_input_style())
+        self.input_quantidade.setStyleSheet(input_style)
+        self.input_quantidade.setMinimumHeight(32)
+
         self.input_unidade = QLineEdit()
-        self.input_unidade.setStyleSheet(get_input_style())
+        self.input_unidade.setStyleSheet(input_style)
+        self.input_unidade.setMinimumHeight(32)
+
         self.input_valor_unitario = QLineEdit()
         self.input_valor_unitario.setPlaceholderText("0,00")
         self.input_valor_unitario.textChanged.connect(self._auto_calcular_total)
-        self.input_valor_unitario.setStyleSheet(get_input_style())
+        self.input_valor_unitario.setStyleSheet(input_style)
+        self.input_valor_unitario.setMinimumHeight(32)
+
         self.input_valor_total = QLineEdit()
         self.input_valor_total.setPlaceholderText("0,00")
         self.input_valor_total.setReadOnly(True)
-        self.input_valor_total.setStyleSheet(get_input_style())
+        self.input_valor_total.setStyleSheet(input_style)
+        self.input_valor_total.setMinimumHeight(32)
+
         self.input_origem = QComboBox()
         self.input_origem.addItems(
             ["Manual", "Planilha de diretoria", "Planilha de engenharia", "Nota geral", "Cupom"]
         )
         self.input_origem.currentTextChanged.connect(self._origem_alterada)
-        self.input_origem.setStyleSheet(get_input_style())
+        self.input_origem.setStyleSheet(input_style)
+        self.input_origem.setMinimumHeight(32)
+
         self.input_observacoes = QLineEdit()
         self.input_observacoes.setPlaceholderText("Observações opcionais")
-        self.input_observacoes.setStyleSheet(get_input_style())
+        self.input_observacoes.setStyleSheet(input_style)
+        self.input_observacoes.setMinimumHeight(32)
 
+        # Componentes do anexo
         self.lbl_anexo = QLabel("Nenhum arquivo selecionado")
         self.lbl_anexo.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 12px;")
         self.lbl_anexo.setVisible(False)
@@ -159,6 +198,7 @@ class LancamentosScreen(QWidget):
         anexo_layout.addWidget(self.btn_ver_anexo)
         anexo_layout.addWidget(self.btn_excluir_anexo)
 
+        # Helper para labels
         def lbl(text):
             l = QLabel(text)
             l.setStyleSheet(f"font-size: 12px; color: {TEXT_SECONDARY}; font-weight: 500;")
@@ -200,15 +240,25 @@ class LancamentosScreen(QWidget):
         btn_salvar.setStyleSheet(get_success_button_style())
         btn_salvar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_salvar.clicked.connect(self._salvar)
+        btn_salvar.setMinimumHeight(32)
         form_layout.addWidget(btn_salvar, 4, 6, 1, 2)
 
-        # Proporções das colunas
-        form_layout.setColumnStretch(0, 0)  # labels
-        form_layout.setColumnStretch(1, 2)  # campo 1
-        form_layout.setColumnStretch(2, 0)  # label 2
-        form_layout.setColumnStretch(3, 3)  # campo 2
+        # Proporções das colunas - equilibradas
+        form_layout.setColumnStretch(0, 1)  # labels
+        form_layout.setColumnStretch(1, 3)  # Data
+        form_layout.setColumnStretch(2, 1)  # labels
+        form_layout.setColumnStretch(3, 3)  # Tipo
+        form_layout.setColumnStretch(4, 1)  # labels
+        form_layout.setColumnStretch(5, 2)  # Unidade
+        form_layout.setColumnStretch(6, 1)  # labels
+        form_layout.setColumnStretch(7, 2)  # Valor
 
-        layout.addLayout(form_layout)
+        panel_layout.addLayout(form_layout)
+
+        # Tabela
+        table_container = QWidget()
+        table_layout = QVBoxLayout(table_container)
+        table_layout.setContentsMargins(0, 0, 0, 0)
 
         self.table = QTableWidget()
         self.table.setColumnCount(7)
@@ -216,17 +266,26 @@ class LancamentosScreen(QWidget):
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)
+        
+        # Configurar colunas da tabela
+        self.table.horizontalHeader().setStretchLastSection(False)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)  # Data
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # Descrição
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)  # Tipo
+        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)  # Origem
+        self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)  # Valor
+        self.table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
+        self.table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
+        self.table.horizontalHeader().resizeSection(5, 70)
+        self.table.horizontalHeader().resizeSection(6, 75)
+        
         self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(36)
         self.table.setStyleSheet(get_table_style(PRIMARY))
         self.table.viewport().installEventFilter(self)
-        layout.addWidget(self.table)
+
+        table_layout.addWidget(self.table)
+        panel_layout.addWidget(table_container, 1)
 
     def carregar(self, obra_id: int) -> None:
         self._obra_id = obra_id
