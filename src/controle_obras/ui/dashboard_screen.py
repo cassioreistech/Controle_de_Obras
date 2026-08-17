@@ -236,79 +236,91 @@ class DashboardScreen(QWidget):
     ) -> QWidget:
         # Container externo para efeito de sombra
         shadow_container = QWidget()
-        shadow_container.setMinimumHeight(100)
+        shadow_container.setMinimumHeight(105)
 
-        # Card principal com glassmorphism
+        # Card principal com glassmorphism premium
         card = QFrame(shadow_container)
         card.setObjectName("card")
         card.setStyleSheet(f"""
             QFrame#card {{
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 rgba(255, 255, 255, 0.95),
-                    stop:1 rgba(255, 255, 255, 0.85));
-                border: 1px solid rgba(255, 255, 255, 0.8);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgba(255, 255, 255, 0.98),
+                    stop:0.5 rgba(255, 255, 255, 0.95),
+                    stop:1 rgba(248, 250, 252, 0.92));
+                border: 1px solid rgba(226, 232, 240, 0.8);
                 border-radius: 16px;
                 border-left: 5px solid {color};
             }}
             QFrame#card:hover {{
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                     stop:0 rgba(255, 255, 255, 1.0),
-                    stop:1 rgba(255, 255, 255, 0.95));
+                    stop:0.5 rgba(255, 255, 255, 0.98),
+                    stop:1 rgba(248, 250, 252, 0.95));
                 border-left-width: 7px;
             }}
         """)
 
-        # Sombra 3D
+        # Sombra 3D premium
         shadow = QGraphicsDropShadowEffect()
-        shadow.setBlurRadius(20)
+        shadow.setBlurRadius(24)
         shadow.setXOffset(4)
-        shadow.setYOffset(6)
-        shadow.setColor(QColor(0, 0, 0, 60))
+        shadow.setYOffset(8)
+        shadow.setColor(QColor(0, 0, 0, 50))
         card.setGraphicsEffect(shadow)
 
         # Layout interno
-        card.setGeometry(0, 0, 200, 100)
+        card.setGeometry(0, 0, 220, 105)
 
         layout = QVBoxLayout(shadow_container)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(10, 10, 10, 10)
         layout.addWidget(card)
 
         card_layout = QVBoxLayout(card)
-        card_layout.setSpacing(8)
-        card_layout.setContentsMargins(16, 14, 16, 14)
+        card_layout.setSpacing(10)
+        card_layout.setContentsMargins(20, 18, 20, 18)
         card_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # Índicador de cor (bolinha)
+        # Indicador de status (bolinha)
         indicator = QLabel("●")
-        indicator.setStyleSheet(f"font-size: 8px; color: {color}; background: transparent;")
+        indicator.setStyleSheet(f"font-size: 10px; color: {color}; background: transparent; letter-spacing: 2px;")
         indicator.setAlignment(Qt.AlignmentFlag.AlignCenter)
         card_layout.addWidget(indicator)
 
-        # Título
+        # Título com estilo profissional
         title_label = QLabel(title)
         title_label.setStyleSheet(f"""
             font-size: 11px;
-            font-weight: 600;
-            color: #6B7280;
-            letter-spacing: 1px;
+            font-weight: 700;
+            color: #64748B;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
             background: transparent;
+            padding: 0;
+            margin: 0;
         """)
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         card_layout.addWidget(title_label)
 
-        # Valor principal
+        # Valor principal com destaque premium
         value_label = QLabel(value)
         value_label.setStyleSheet(f"""
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 800;
             color: {color};
             background: transparent;
             letter-spacing: -0.5px;
+            padding: 0;
+            margin: 0;
         """)
         value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         value_label.setProperty("value_label", True)
         card_layout.addWidget(value_label)
+
+        # Linha decorativa sutil
+        line = QLabel("─" * 20)
+        line.setStyleSheet(f"color: {color}40; background: transparent; font-size: 8px;")
+        line.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        card_layout.addWidget(line)
 
         return shadow_container
 
