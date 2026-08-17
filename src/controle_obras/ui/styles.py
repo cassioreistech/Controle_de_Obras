@@ -28,6 +28,7 @@ SUCCESS_HOVER = "#15803D"
 SUCCESS_LIGHT = "#F0FDF4"
 
 WARNING = "#D97706"
+WARNING_HOVER = "#B45309"
 WARNING_LIGHT = "#FFFBEB"
 
 DANGER = "#DC2626"
@@ -37,6 +38,12 @@ DANGER_LIGHT = "#FEF2F2"
 INFO = "#2563EB"
 INFO_HOVER = "#1D4ED8"
 INFO_LIGHT = "#EFF6FF"
+
+BROWN = "#92400E"
+BROWN_HOVER = "#78350F"
+
+DARK_GREEN = "#15803D"
+DARK_GREEN_HOVER = "#166534"
 
 
 # ==================== ESCALA TIPOGRÁFICA ====================
@@ -202,20 +209,29 @@ def get_secondary_button_style():
 
 
 def get_action_button_style(color, hover_color):
-    """Estilo genérico para botões de ação coloridos."""
+    """Estilo genérico para botões de ação coloridos com efeito 3D discreto."""
     return f"""
         QPushButton {{
-            padding: 8px 16px;
+            padding: 8px 18px;
             background-color: {color};
             color: {SURFACE};
-            border: none;
-            border-radius: {RADIUS['medium']};
+            border: 1px solid rgba(0, 0, 0, 35%);
+            border-top-color: rgba(255, 255, 255, 45%);
+            border-bottom-color: rgba(0, 0, 0, 45%);
+            border-radius: 7px;
             font-size: {TYPOGRAPHY['button']['size']};
-            font-weight: {TYPOGRAPHY['button']['weight']};
+            font-weight: 600;
             min-width: 90px;
         }}
         QPushButton:hover {{
             background-color: {hover_color};
+            border-top-color: rgba(255, 255, 255, 75%);
+        }}
+        QPushButton:pressed {{
+            padding-top: 10px;
+            padding-bottom: 6px;
+            border-top-color: rgba(0, 0, 0, 45%);
+            border-bottom-color: rgba(255, 255, 255, 35%);
         }}
     """
 
@@ -229,19 +245,48 @@ def get_table_style(header_color=PRIMARY):
             border-radius: {RADIUS['large']};
             gridline-color: {BORDER_LIGHT};
             font-size: {TYPOGRAPHY['table_cell']['size']};
-            selection-background-color: {INFO_LIGHT};
-            selection-color: {INFO};
+            selection-background-color: #DCEBFA;
+            selection-color: #163A5F;
+            alternate-background-color: #F8FAFC;
+            outline: none;
         }}
         QTableWidget::item {{
             padding: 10px 12px;
             border-bottom: 1px solid {BORDER_LIGHT};
+            border: none;
+            outline: none;
         }}
         QTableWidget::item:selected {{
-            background-color: {INFO_LIGHT};
-            color: {INFO};
+            background-color: #DCEBFA;
+            color: #163A5F;
+            border: none;
+            outline: none;
+        }}
+        QTableWidget::item:selected:active {{
+            background-color: #C7DDF4;
+            color: #163A5F;
+            border: none;
+            outline: none;
+        }}
+        QTableWidget::item:selected:!active {{
+            background-color: #E5EEF8;
+            color: #334E68;
+            border: none;
+            outline: none;
+        }}
+        QTableWidget::item:focus {{
+            border: none;
+            outline: none;
+        }}
+        QTableWidget::item:selected:focus {{
+            background-color: #DCEBFA;
+            color: #163A5F;
+            border: none;
+            outline: none;
         }}
         QTableWidget::item:hover {{
-            background-color: {BORDER_LIGHT};
+            background-color: #F1F5F9;
+            color: #1F2937;
         }}
         QHeaderView::section {{
             background-color: {header_color};

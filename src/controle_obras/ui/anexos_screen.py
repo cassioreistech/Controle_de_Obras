@@ -42,55 +42,8 @@ from controle_obras.ui.styles import (
     get_action_button_style,
     get_screen_title_style,
     get_success_button_style,
+    get_table_style,
 )
-
-
-# Estilo customizado para a tabela de anexos com seleção clara
-ESTILO_TABELA_ANEXOS = """
-    QTableWidget {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        gridline-color: #F1F5F9;
-        font-size: 13px;
-        selection-background-color: #DCEBFA;
-        selection-color: #163A5F;
-        alternate-background-color: #F8FAFC;
-    }
-    QTableWidget::item {
-        padding: 8px 12px;
-        border-bottom: 1px solid #F1F5F9;
-    }
-    QTableWidget::item:selected {
-        background-color: #DCEBFA;
-        color: #163A5F;
-    }
-    QTableWidget::item:selected:active {
-        background-color: #C7DDF4;
-        color: #163A5F;
-    }
-    QTableWidget::item:selected:!active {
-        background-color: #E5EEF8;
-        color: #334E68;
-    }
-    QTableWidget::item:hover {
-        background-color: #F1F5F9;
-        color: #1F2937;
-    }
-    QHeaderView::section {
-        background-color: #1B2A4A;
-        color: #FFFFFF;
-        font-weight: 600;
-        font-size: 12px;
-        padding: 10px 12px;
-        border: none;
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        border-bottom: 2px solid rgba(255, 255, 255, 0.15);
-    }
-    QHeaderView::section:last {
-        border-right: none;
-    }
-"""
 
 
 class AnexosScreen(QWidget):
@@ -147,7 +100,7 @@ class AnexosScreen(QWidget):
         self.table.horizontalHeader().resizeSection(4, 70)
         self.table.horizontalHeader().resizeSection(5, 75)
 
-        self.table.setStyleSheet(ESTILO_TABELA_ANEXOS)
+        self.table.setStyleSheet(get_table_style(PRIMARY))
         self.table.viewport().installEventFilter(self)
         layout.addWidget(self.table)
 

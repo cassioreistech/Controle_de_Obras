@@ -34,9 +34,13 @@ if TYPE_CHECKING:
 from controle_obras.ui.styles import (
     BACKGROUND,
     BORDER,
+    BROWN,
+    BROWN_HOVER,
     DANGER,
     DANGER_HOVER,
     DANGER_LIGHT,
+    DARK_GREEN,
+    DARK_GREEN_HOVER,
     INFO,
     INFO_HOVER,
     INFO_LIGHT,
@@ -51,6 +55,8 @@ from controle_obras.ui.styles import (
     TEXT_MUTED,
     TEXT_PRIMARY,
     TEXT_SECONDARY,
+    WARNING,
+    WARNING_HOVER,
     get_action_button_style,
     get_card_style,
     get_input_style,
@@ -126,9 +132,9 @@ class DashboardScreen(QWidget):
         botoes = [
             ("+ Aditivo", INFO, INFO_HOVER, self._novo_aditivo),
             ("+ Lançamento", SUCCESS, SUCCESS_HOVER, self._novo_lancamento),
-            ("+ Anexo", PRIMARY, PRIMARY_HOVER, self._novo_anexo),
-            ("Gerar PDF", PRIMARY, PRIMARY_HOVER, self._gerar_pdf),
-            ("Atualizar", TEXT_SECONDARY, TEXT_MUTED, lambda: self.carregar(self._obra_id) if self._obra_id else None),
+            ("+ Anexo", WARNING, WARNING_HOVER, self._novo_anexo),
+            ("Gerar PDF", BROWN, BROWN_HOVER, self._gerar_pdf),
+            ("Atualizar", DARK_GREEN, DARK_GREEN_HOVER, lambda: self.carregar(self._obra_id) if self._obra_id else None),
             ("Limpar", TEXT_SECONDARY, TEXT_MUTED, self._limpar_selecao),
         ]
 
