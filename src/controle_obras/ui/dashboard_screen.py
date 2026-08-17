@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFormLayout,
     QFrame,
+    QGraphicsDropShadowEffect,
     QGridLayout,
     QHBoxLayout,
     QHeaderView,
@@ -135,7 +136,7 @@ class DashboardScreen(QWidget):
             "Valor Contratado", "R$ 0,00", CORES["sucesso"], "#e8f5e9"
         )
         self.card_aditivos = self._create_card(
-            "Total de Aditivos", "R$ 0,00", CORES["info"], "#e3f2fd", show_button=True
+            "Total de Aditivos", "R$ 0,00", CORES["info"], "#e3f2fd"
         )
         self.card_gasto = self._create_card(
             "Total Gasto", "R$ 0,00", CORES["perigo"], "#ffebee"
@@ -231,54 +232,85 @@ class DashboardScreen(QWidget):
         return container
 
     def _create_card(
-        self, title: str, value: str, color: str, bg_color: str, show_button: bool = False
+        self, title: str, value: str, color: str, bg_color: str
     ) -> QWidget:
-        card = QFrame()
+        # Container externo para efeito de sombra
+        shadow_container = QWidget()
+        shadow_container.setMinimumHeight(100)
+
+        # Card principal com glassmorphism
+        card = QFrame(shadow_container)
+        card.setObjectName("card")
         card.setStyleSheet(f"""
-            QFrame {{
-                background-color: {bg_color};
-                border-radius: 5px;
-                border-left: 3px solid {color};
-                padding: 6px 10px;
+            QFrame#card {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(255, 255, 255, 0.95),
+                    stop:1 rgba(255, 255, 255, 0.85));
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 16px;
+                border-left: 5px solid {color};
             }}
-            QFrame:hover {{
-                border-left-width: 5px;
+            QFrame#card:hover {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(255, 255, 255, 1.0),
+                    stop:1 rgba(255, 255, 255, 0.95));
+                border-left-width: 7px;
             }}
         """)
-        layout = QVBoxLayout(card)
-        layout.setSpacing(1)
 
+        # Sombra 3D
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(20)
+        shadow.setXOffset(4)
+        shadow.setYOffset(6)
+        shadow.setColor(QColor(0, 0, 0, 60))
+        card.setGraphicsEffect(shadow)
+
+        # Layout interno
+        card.setGeometry(0, 0, 200, 100)
+
+        layout = QVBoxLayout(shadow_container)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.addWidget(card)
+
+        card_layout = QVBoxLayout(card)
+        card_layout.setSpacing(8)
+        card_layout.setContentsMargins(16, 14, 16, 14)
+        card_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Índicador de cor (bolinha)
+        indicator = QLabel("●")
+        indicator.setStyleSheet(f"font-size: 8px; color: {color}; background: transparent;")
+        indicator.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        card_layout.addWidget(indicator)
+
+        # Título
         title_label = QLabel(title)
-        title_label.setStyleSheet(f"font-size: 9px; color: {CORES['texto_secundario']}; font-weight: 500;")
-        layout.addWidget(title_label)
+        title_label.setStyleSheet(f"""
+            font-size: 11px;
+            font-weight: 600;
+            color: #6B7280;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: transparent;
+        """)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        card_layout.addWidget(title_label)
 
+        # Valor principal
         value_label = QLabel(value)
-        value_label.setStyleSheet(f"font-size: 15px; font-weight: bold; color: {color};")
+        value_label.setStyleSheet(f"""
+            font-size: 22px;
+            font-weight: 800;
+            color: {color};
+            background: transparent;
+            letter-spacing: -0.5px;
+        """)
+        value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         value_label.setProperty("value_label", True)
-        layout.addWidget(value_label)
+        card_layout.addWidget(value_label)
 
-        if show_button:
-            btn_ver = QPushButton("Ver Aditivos")
-            btn_ver.setStyleSheet(f"""
-                QPushButton {{
-                    padding: 4px 10px;
-                    background-color: {color};
-                    color: white;
-                    border: none;
-                    border-radius: 3px;
-                    font-size: 10px;
-                    font-weight: bold;
-                    margin-top: 4px;
-                }}
-                QPushButton:hover {{
-                    background-color: {color}dd;
-                }}
-            """)
-            btn_ver.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn_ver.clicked.connect(self._ver_aditivos)
-            layout.addWidget(btn_ver)
-
-        return card
+        return shadow_container
 
     def carregar(self, obra_id: int) -> None:
         self._obra_id = obra_id
