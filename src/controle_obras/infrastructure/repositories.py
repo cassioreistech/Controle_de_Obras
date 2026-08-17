@@ -439,23 +439,18 @@ class ConfiguracaoRepository(BaseRepository[Configuracao]):
         }
 
         with self._db.get_connection() as conn:
-            if configuracao.id:
-                conn.execute(
-                    """
-                    UPDATE configuracoes SET chave=:chave, valor=:valor,
-                        descricao=:descricao, updated_at=:updated_at
-                    WHERE id=:id
-                    """,
-                    {**data, "id": configuracao.id},
-                )
-            else:
-                cursor = conn.execute(
-                    """
-                    INSERT INTO configuracoes (chave, valor, descricao, updated_at)
-                    VALUES (:chave, :valor, :descricao, :updated_at)
-                    """,
-                    data,
-                )
+            cursor = conn.execute(
+                """
+                INSERT INTO configuracoes (chave, valor, descricao, updated_at)
+                VALUES (:chave, :valor, :descricao, :updated_at)
+                ON CONFLICT(chave) DO UPDATE SET
+                    valor=excluded.valor,
+                    descricao=excluded.descricao,
+                    updated_at=excluded.updated_at
+                """,
+                data,
+            )
+            if not configuracao.id:
                 configuracao.id = cursor.lastrowid
         return configuracao
 
