@@ -49,13 +49,14 @@ CORES = {
 
 ESTILO_BOTAO = """
     QPushButton {{
-        padding: 6px 12px;
+        padding: 10px 20px;
         background-color: {cor};
         color: white;
         border: none;
-        border-radius: 4px;
+        border-radius: 6px;
         font-weight: bold;
-        font-size: 11px;
+        font-size: 13px;
+        min-width: 100px;
     }}
     QPushButton:hover {{
         background-color: {cor_hover};
@@ -156,13 +157,15 @@ class DashboardScreen(QWidget):
             QFrame {{
                 background-color: {CORES['fundo_card']};
                 border: 1px solid {CORES['borda']};
-                border-radius: 6px;
-                padding: 8px;
+                border-radius: 8px;
+                padding: 10px;
             }}
         """)
         layout = QHBoxLayout(acoes)
-        layout.setSpacing(8)
-        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(12)
+        layout.setContentsMargins(16, 12, 16, 12)
+
+        layout.addStretch()
 
         botoes = [
             ("+ Aditivo", CORES["info"], "#2471a3", "#1a5276", self._novo_aditivo),

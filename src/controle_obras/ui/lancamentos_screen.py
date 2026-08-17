@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
     QFileDialog,
-    QFormLayout,
+    QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -21,7 +21,6 @@ from PySide6.QtWidgets import (
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -56,76 +55,113 @@ class LancamentosScreen(QWidget):
         title.setStyleSheet("font-size: 24px; font-weight: bold; color: #2c3e50;")
         layout.addWidget(title)
 
-        form_layout = QFormLayout()
+        form_layout = QGridLayout()
+        form_layout.setContentsMargins(4, 4, 4, 4)
+        form_layout.setHorizontalSpacing(10)
+        form_layout.setVerticalSpacing(5)
 
         self.input_data = QDateEdit()
         self.input_data.setCalendarPopup(True)
         self.input_data.setDate(date.today())
+        self.input_data.setMinimumHeight(28)
         self.input_tipo = QComboBox()
+        self.input_tipo.setMinimumHeight(28)
         self.input_descricao = QLineEdit()
-        self.input_complemento = QLineEdit()
+        self.input_descricao.setMinimumHeight(28)
         self.input_quantidade = QLineEdit()
         self.input_quantidade.setPlaceholderText("0")
         self.input_quantidade.textChanged.connect(self._auto_calcular_total)
+        self.input_quantidade.setMinimumHeight(28)
         self.input_unidade = QLineEdit()
+        self.input_unidade.setMinimumHeight(28)
         self.input_valor_unitario = QLineEdit()
         self.input_valor_unitario.setPlaceholderText("0,00")
         self.input_valor_unitario.textChanged.connect(self._auto_calcular_total)
+        self.input_valor_unitario.setMinimumHeight(28)
         self.input_valor_total = QLineEdit()
         self.input_valor_total.setPlaceholderText("0,00")
         self.input_valor_total.setReadOnly(True)
+        self.input_valor_total.setMinimumHeight(28)
         self.input_origem = QComboBox()
         self.input_origem.addItems(
             ["Manual", "Planilha de diretoria", "Planilha de engenharia", "Nota geral", "Cupom"]
         )
         self.input_origem.currentTextChanged.connect(self._origem_alterada)
-        self.input_observacoes = QTextEdit()
-        self.input_observacoes.setMaximumHeight(80)
+        self.input_origem.setMinimumHeight(28)
+        self.input_observacoes = QLineEdit()
+        self.input_observacoes.setPlaceholderText("Observações opcionais")
+        self.input_observacoes.setMinimumHeight(28)
 
         self.lbl_anexo = QLabel("Nenhum arquivo selecionado")
         self.lbl_anexo.setStyleSheet("color: #7f8c8d; font-size: 12px;")
         self.lbl_anexo.setVisible(False)
 
-        self.btn_ver_anexo = QPushButton("👁 Ver Anexo")
-        self.btn_ver_anexo.setStyleSheet("padding: 2px 8px; background-color: #3498db; color: white; border-radius: 3px; font-size: 11px;")
+        self.btn_ver_anexo = QPushButton("👁 Ver")
+        self.btn_ver_anexo.setStyleSheet("padding: 2px 6px; background-color: #3498db; color: white; border-radius: 3px; font-size: 11px;")
         self.btn_ver_anexo.setVisible(False)
         self.btn_ver_anexo.clicked.connect(self._ver_anexo_atual)
 
-        self.btn_excluir_anexo = QPushButton("🗑 Excluir Anexo")
-        self.btn_excluir_anexo.setStyleSheet("padding: 2px 8px; background-color: #e74c3c; color: white; border-radius: 3px; font-size: 11px;")
+        self.btn_excluir_anexo = QPushButton("🗑")
+        self.btn_excluir_anexo.setStyleSheet("padding: 2px 6px; background-color: #e74c3c; color: white; border-radius: 3px; font-size: 11px;")
         self.btn_excluir_anexo.setVisible(False)
         self.btn_excluir_anexo.clicked.connect(self._excluir_anexo_atual)
 
         anexo_layout = QHBoxLayout()
+        anexo_layout.setContentsMargins(0, 0, 0, 0)
+        anexo_layout.setSpacing(4)
         anexo_layout.addWidget(self.lbl_anexo)
         anexo_layout.addWidget(self.btn_ver_anexo)
         anexo_layout.addWidget(self.btn_excluir_anexo)
-        anexo_layout.addStretch()
 
-        form_layout.addRow("Data", self.input_data)
-        form_layout.addRow("Tipo", self.input_tipo)
-        form_layout.addRow("Descrição *", self.input_descricao)
-        form_layout.addRow("Complemento", self.input_complemento)
-        form_layout.addRow("Quantidade", self.input_quantidade)
-        form_layout.addRow("Unidade", self.input_unidade)
-        form_layout.addRow("Valor Unitário", self.input_valor_unitario)
-        form_layout.addRow("Valor Total *", self.input_valor_total)
-        form_layout.addRow("Origem", self.input_origem)
-        form_layout.addRow("Anexo vinculado", anexo_layout)
-        form_layout.addRow("Observações", self.input_observacoes)
+        def lbl(text):
+            l = QLabel(text)
+            l.setStyleSheet("font-size: 12px; color: #2c3e50;")
+            l.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            return l
 
-        layout.addLayout(form_layout)
+        # Linha 1: Data + Tipo
+        form_layout.addWidget(lbl("Data:"), 0, 0)
+        form_layout.addWidget(self.input_data, 0, 1)
+        form_layout.addWidget(lbl("Tipo:"), 0, 2)
+        form_layout.addWidget(self.input_tipo, 0, 3, 1, 3)
 
-        btn_layout = QHBoxLayout()
-        btn_layout.addStretch()
+        # Linha 2: Descrição (largura completa)
+        form_layout.addWidget(lbl("Descrição *:"), 1, 0)
+        form_layout.addWidget(self.input_descricao, 1, 1, 1, 5)
+
+        # Linha 3: Qtd + Unidade + Valor Unitário + Valor Total
+        form_layout.addWidget(lbl("Qtd:"), 2, 0)
+        form_layout.addWidget(self.input_quantidade, 2, 1)
+        form_layout.addWidget(lbl("Unidade:"), 2, 2)
+        form_layout.addWidget(self.input_unidade, 2, 3)
+        form_layout.addWidget(lbl("Valor Unit.:"), 2, 4)
+        form_layout.addWidget(self.input_valor_unitario, 2, 5)
+        form_layout.addWidget(lbl("Valor Total *:"), 2, 6)
+        form_layout.addWidget(self.input_valor_total, 2, 7)
+
+        # Linha 4: Origem + Anexo
+        form_layout.addWidget(lbl("Origem:"), 3, 0)
+        form_layout.addWidget(self.input_origem, 3, 1)
+        form_layout.addWidget(lbl("Anexo:"), 3, 2)
+        form_layout.addLayout(anexo_layout, 3, 3, 1, 5)
+
+        # Linha 5: Observações + Salvar
+        form_layout.addWidget(lbl("Observações:"), 4, 0)
+        form_layout.addWidget(self.input_observacoes, 4, 1, 1, 5)
 
         btn_salvar = QPushButton("Salvar Lançamento")
         btn_salvar.setToolTip("Salvar o lançamento e anexar arquivo se houver")
-        btn_salvar.setStyleSheet("padding: 10px 24px; background-color: #27ae60; color: white;")
+        btn_salvar.setStyleSheet("padding: 6px 16px; background-color: #27ae60; color: white; font-weight: bold; border-radius: 4px;")
         btn_salvar.clicked.connect(self._salvar)
-        btn_layout.addWidget(btn_salvar)
+        form_layout.addWidget(btn_salvar, 4, 6, 1, 2)
 
-        layout.addLayout(btn_layout)
+        # Proporções das colunas
+        form_layout.setColumnStretch(0, 0)  # labels
+        form_layout.setColumnStretch(1, 2)  # campo 1
+        form_layout.setColumnStretch(2, 0)  # label 2
+        form_layout.setColumnStretch(3, 3)  # campo 2
+
+        layout.addLayout(form_layout)
 
         self.table = QTableWidget()
         self.table.setColumnCount(7)
@@ -311,7 +347,7 @@ class LancamentosScreen(QWidget):
             valor_unitario=float(unit_text) if unit_text else None,
             valor_total=valor_total,
             origem_informacao=origem,
-            observacoes=self.input_observacoes.toPlainText().strip(),
+            observacoes=self.input_observacoes.text().strip(),
         )
 
         try:
@@ -390,7 +426,7 @@ class LancamentosScreen(QWidget):
         self.input_origem.setCurrentText(lancamento.origem_informacao)
         self.input_origem.blockSignals(False)
 
-        self.input_observacoes.setPlainText(lancamento.observacoes)
+        self.input_observacoes.setText(lancamento.observacoes)
 
         # Verificar se existe anexo vinculado
         anexos = self._parent.anexo_service.listar_por_lancamento(lancamento_id)

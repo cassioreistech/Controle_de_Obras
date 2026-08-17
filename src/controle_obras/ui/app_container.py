@@ -164,63 +164,23 @@ class AppContainer(QMainWindow):
         self.combo_obras.currentIndexChanged.connect(self._obra_selecionada)
         self.combo_obras.setStyleSheet("""
             QComboBox {
-                min-height: 28px;
-                max-height: 30px;
+                min-height: 32px;
+                max-height: 34px;
                 padding: 4px 8px;
                 border: 1px solid #27ae60;
                 border-radius: 4px;
-                background-color: rgba(39, 174, 96, 0.15);
-                color: white;
-                font-size: 12px;
+                background-color: #34495e;
+                color: #FFFFFF;
+                font-size: 14px;
                 font-weight: bold;
                 min-width: 250px;
             }
             QComboBox:hover {
                 border-color: #2ecc71;
-                background-color: rgba(39, 174, 96, 0.25);
             }
             QComboBox::drop-down {
                 border: none;
                 padding-right: 6px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #FFFFFF;
-                color: #1E293B;
-                selection-background-color: #1E40AF;
-                selection-color: #FFFFFF;
-                border: 2px solid #3B82F6;
-                outline: none;
-                font-size: 13px;
-            }
-            QComboBox QAbstractItemView::item {
-                padding: 8px 12px;
-                min-height: 28px;
-                border-bottom: 1px solid #E5E7EB;
-            }
-            QComboBox QAbstractItemView::item:hover {
-                background-color: #3B82F6;
-                color: #FFFFFF;
-            }
-            QComboBox QAbstractItemView::item:selected {
-                background-color: #1E40AF;
-                color: #FFFFFF;
-            }
-            QComboBox QListView {
-                background-color: #FFFFFF;
-                color: #1E293B;
-            }
-            QComboBox QListView::item {
-                padding: 8px 12px;
-                min-height: 28px;
-                border-bottom: 1px solid #E5E7EB;
-            }
-            QComboBox QListView::item:hover {
-                background-color: #3B82F6;
-                color: #FFFFFF;
-            }
-            QComboBox QListView::item:selected {
-                background-color: #1E40AF;
-                color: #FFFFFF;
             }
         """)
         center_layout.addWidget(self.combo_obras)
@@ -271,9 +231,14 @@ class AppContainer(QMainWindow):
         obra_id = self.combo_obras.itemData(index)
         if obra_id:
             self.set_obra_ativa(obra_id)
-            obra_ativa_id = self.config_service.obter_obra_ativa()
-            if self.stack.currentWidget() == self.dashboard_screen:
+            # Atualizar a tela atual se depender da obra
+            current = self.stack.currentWidget()
+            if current == self.dashboard_screen:
                 self.dashboard_screen.carregar(obra_id)
+            elif current == self.lancamentos_screen:
+                self.lancamentos_screen.carregar(obra_id)
+            elif current == self.anexos_screen:
+                self.anexos_screen.carregar(obra_id)
 
     def _check_first_run(self) -> None:
         if not self.empresa_service.empresa_configurada():
