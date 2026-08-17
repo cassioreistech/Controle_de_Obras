@@ -2,6 +2,17 @@
 
 Sistema desktop para controle financeiro e operacional de obras de engenharia civil e construção.
 
+## Funcionalidades
+
+- **Dashboard** — Visão geral com cards de valores (contratado, aditivos, gastos), tabela de movimentos e gráficos
+- **Cadastro de Obras** — Gerenciamento completo de obras com dados do cliente, local e responsável
+- **Lançamentos** — Registro de lançamentos financeiros com tipos, valores e origens
+- **Aditivos** — Controle de aditivos contratuais
+- **Anexos** — Upload e gerenciamento de documentos (PDF, imagens, etc.)
+- **Relatórios PDF** — Geração de relatórios em PDF com os dados da obra
+- **Backup/Restaurar** — Sistema de backup completo com anexos
+- **Configurações** — Dados da empresa e informações do sistema
+
 ## Stack
 
 - **Python 3.10+**
@@ -13,11 +24,12 @@ Sistema desktop para controle financeiro e operacional de obras de engenharia ci
 
 ```
 src/
-  domain/         # Entidades e regras de negócio
-  application/    # Casos de uso e serviços
-  infrastructure/ # Repositórios, banco, filesystem, PDF
-  ui/             # Telas PySide6
-  shared/         # Utilitários e configurações
+  controle_obras/
+    domain/         # Entidades e regras de negócio
+    application/    # Casos de uso e serviços
+    infrastructure/ # Repositórios, banco, filesystem, PDF
+    ui/             # Telas PySide6
+    shared/         # Utilitários e configurações
 tests/
   domain/
   application/
@@ -41,6 +53,8 @@ pip install -e ".[dev]"
 python -m controle_obras
 ```
 
+Ou execute o arquivo `abrir.bat` no Windows.
+
 ## Testes
 
 ```bash
@@ -54,3 +68,18 @@ ruff check src tests
 ruff format src tests
 mypy src
 ```
+
+## Screenshots
+
+- Dashboard com cards de valores e tabela de movimentos
+- Formulário compacto de lançamentos
+- Tela de anexos com botões de ação
+- Configurações da empresa
+
+## Autor
+
+**Cassio Vicente** — cassioreistech
+
+## Licença
+
+Projeto proprietário.
