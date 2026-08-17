@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
-    QComboBox,
     QDateEdit,
     QDialog,
     QDialogButtonBox,
@@ -114,11 +113,8 @@ class DashboardScreen(QWidget):
 
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)
-        layout.setContentsMargins(12, 12, 12, 12)
-
-        # Header
-        layout.addWidget(self._build_header())
+        layout.setSpacing(8)
+        layout.setContentsMargins(10, 10, 10, 10)
 
         # Cards de resumo
         layout.addWidget(self._build_cards())
@@ -129,77 +125,10 @@ class DashboardScreen(QWidget):
         # Tabela últimos movimentos
         layout.addWidget(self._build_tabela(), 1)
 
-    def _build_header(self) -> QWidget:
-        header = QFrame()
-        header.setFixedHeight(52)
-        header.setStyleSheet(f"""
-            QFrame {{
-                background-color: {CORES['primaria']};
-                border-radius: 4px;
-                padding: 0px;
-            }}
-            QLabel {{
-                color: white;
-                padding: 0px;
-            }}
-            QComboBox {{
-                min-height: 28px;
-                max-height: 30px;
-                padding: 2px 8px;
-                border: 1px solid rgba(255,255,255,0.3);
-                border-radius: 3px;
-                background-color: rgba(255,255,255,0.1);
-                color: white;
-                font-size: 12px;
-                min-width: 220px;
-            }}
-            QComboBox:hover {{
-                border-color: rgba(255,255,255,0.5);
-            }}
-            QComboBox::drop-down {{
-                border: none;
-                padding-right: 6px;
-            }}
-            QComboBox QAbstractItemView {{
-                background-color: white;
-                color: {CORES['texto']};
-                selection-background-color: {CORES['info']};
-            }}
-        """)
-        layout = QHBoxLayout(header)
-        layout.setContentsMargins(12, 0, 12, 0)
-        layout.setSpacing(8)
-
-        self.header = QLabel("")
-        self.header.setStyleSheet("font-size: 13px; font-weight: bold; padding: 0;")
-        layout.addWidget(self.header)
-
-        layout.addStretch()
-
-        lbl_obra = QLabel("Obra ativa:")
-        lbl_obra.setStyleSheet("font-size: 11px; padding: 0;")
-        layout.addWidget(lbl_obra)
-
-        self.combo_obras = QComboBox()
-        self.combo_obras.setToolTip("Selecionar obra ativa")
-        self.combo_obras.currentIndexChanged.connect(self._obra_selecionada)
-        layout.addWidget(self.combo_obras)
-
-        btn_trocar = QPushButton("Trocar Obra")
-        btn_trocar.setStyleSheet(ESTILO_BOTAO.format(
-            cor="rgba(255,255,255,0.15)",
-            cor_hover="rgba(255,255,255,0.25)",
-            cor_pressed="rgba(255,255,255,0.1)"
-        ))
-        btn_trocar.clicked.connect(lambda: self._parent.show_obras_list())
-        layout.addWidget(btn_trocar)
-
-        return header
-
     def _build_cards(self) -> QWidget:
         cards_widget = QWidget()
         cards_layout = QGridLayout(cards_widget)
-        cards_layout.setSpacing(12)
+        cards_layout.setSpacing(8)
 
         self.card_contratado = self._create_card(
             "Valor Contratado", "R$ 0,00", CORES["sucesso"], "#e8f5e9"
@@ -305,23 +234,23 @@ class DashboardScreen(QWidget):
         card.setStyleSheet(f"""
             QFrame {{
                 background-color: {bg_color};
-                border-radius: 6px;
+                border-radius: 5px;
                 border-left: 3px solid {color};
-                padding: 10px 12px;
+                padding: 6px 10px;
             }}
             QFrame:hover {{
                 border-left-width: 5px;
             }}
         """)
         layout = QVBoxLayout(card)
-        layout.setSpacing(2)
+        layout.setSpacing(1)
 
         title_label = QLabel(title)
-        title_label.setStyleSheet(f"font-size: 10px; color: {CORES['texto_secundario']}; font-weight: 500;")
+        title_label.setStyleSheet(f"font-size: 9px; color: {CORES['texto_secundario']}; font-weight: 500;")
         layout.addWidget(title_label)
 
         value_label = QLabel(value)
-        value_label.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {color};")
+        value_label.setStyleSheet(f"font-size: 15px; font-weight: bold; color: {color};")
         value_label.setProperty("value_label", True)
         layout.addWidget(value_label)
 
@@ -329,14 +258,14 @@ class DashboardScreen(QWidget):
             btn_ver = QPushButton("Ver Aditivos")
             btn_ver.setStyleSheet(f"""
                 QPushButton {{
-                    padding: 6px 12px;
+                    padding: 4px 10px;
                     background-color: {color};
                     color: white;
                     border: none;
-                    border-radius: 4px;
-                    font-size: 11px;
+                    border-radius: 3px;
+                    font-size: 10px;
                     font-weight: bold;
-                    margin-top: 8px;
+                    margin-top: 4px;
                 }}
                 QPushButton:hover {{
                     background-color: {color}dd;
@@ -350,13 +279,11 @@ class DashboardScreen(QWidget):
 
     def carregar(self, obra_id: int) -> None:
         self._obra_id = obra_id
-        self._carregar_combo_obras(obra_id)
 
         obra = self._parent.obra_service.obter(obra_id)
         if not obra:
             return
 
-        self.header.setText(f"{obra.codigo} — {obra.nome}")
         resumo = self._parent.resumo_service.calcular_resumo(obra_id)
 
         self._update_card(self.card_contratado, f"R$ {resumo.valor_contratado:,.2f}")
@@ -419,25 +346,6 @@ class DashboardScreen(QWidget):
             else:
                 valor_item.setForeground(QColor(CORES["sucesso"]))
             self.table_lancamentos.setItem(row, 3, valor_item)
-
-    def _carregar_combo_obras(self, obra_atual_id: int) -> None:
-        self.combo_obras.blockSignals(True)
-        self.combo_obras.clear()
-        obras = self._parent.obra_service.listar()
-        for obra in obras:
-            self.combo_obras.addItem(f"{obra.codigo} - {obra.nome}", obra.id)
-        index = self.combo_obras.findData(obra_atual_id)
-        if index >= 0:
-            self.combo_obras.setCurrentIndex(index)
-        self.combo_obras.blockSignals(False)
-
-    def _obra_selecionada(self, index: int) -> None:
-        if index < 0:
-            return
-        obra_id = self.combo_obras.itemData(index)
-        if obra_id and obra_id != self._obra_id:
-            self._parent.set_obra_ativa(obra_id)
-            self.carregar(obra_id)
 
     def eventFilter(self, obj, event):
         if obj == self.table_lancamentos.viewport() and event.type() == event.Type.MouseButtonPress:

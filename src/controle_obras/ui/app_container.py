@@ -1,7 +1,9 @@
 """Container principal da aplicação com navegação por páginas."""
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
+    QComboBox,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -114,7 +116,7 @@ class AppContainer(QMainWindow):
 
     def _build_header(self) -> QWidget:
         header = QWidget()
-        header.setFixedHeight(44)
+        header.setFixedHeight(48)
         header.setStyleSheet("""
             QWidget {
                 background-color: #2c3e50;
@@ -123,7 +125,7 @@ class AppContainer(QMainWindow):
             QPushButton {
                 min-height: 28px;
                 max-height: 30px;
-                padding: 2px 12px;
+                padding: 2px 10px;
                 background-color: rgba(255, 255, 255, 0.1);
                 color: white;
                 border: none;
@@ -136,16 +138,87 @@ class AppContainer(QMainWindow):
         """)
         layout = QHBoxLayout(header)
         layout.setContentsMargins(12, 0, 12, 0)
-        layout.setSpacing(8)
+        layout.setSpacing(6)
 
+        # Grupo esquerdo: título
         self.title_label = QLabel("Controle de Obras")
-        self.title_label.setStyleSheet("font-size: 15px; font-weight: bold; padding: 0;")
+        self.title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: white; letter-spacing: 1px; padding: 0;")
         layout.addWidget(self.title_label)
 
-        self.context_label = QLabel("")
-        self.context_label.setStyleSheet("font-size: 11px; color: #bdc3c7; padding: 0;")
-        layout.addWidget(self.context_label, 1)
+        layout.addStretch()
 
+        # Grupo central/direito: seletor da obra
+        lbl_obra = QLabel("Obra:")
+        lbl_obra.setStyleSheet("font-size: 11px; padding: 0; color: #bdc3c7;")
+        layout.addWidget(lbl_obra)
+
+        self.combo_obras = QComboBox()
+        self.combo_obras.setToolTip("Selecionar obra ativa")
+        self.combo_obras.currentIndexChanged.connect(self._obra_selecionada)
+        self.combo_obras.setStyleSheet("""
+            QComboBox {
+                min-height: 28px;
+                max-height: 30px;
+                padding: 2px 8px;
+                border: 1px solid #27ae60;
+                border-radius: 3px;
+                background-color: rgba(39, 174, 96, 0.15);
+                color: white;
+                font-size: 12px;
+                font-weight: bold;
+                min-width: 200px;
+            }
+            QComboBox:hover {
+                border-color: #2ecc71;
+                background-color: rgba(39, 174, 96, 0.25);
+            }
+            QComboBox::drop-down {
+                border: none;
+                padding-right: 6px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: white;
+                color: #2c3e50;
+                selection-background-color: #d5f5e3;
+                selection-color: #2c3e50;
+            }
+            QComboBox QAbstractItemView::item {
+                padding: 4px 8px;
+                min-height: 24px;
+            }
+            QComboBox QAbstractItemView::item:hover {
+                background-color: #27ae60;
+                color: white;
+            }
+        """)
+        layout.addWidget(self.combo_obras)
+
+        self.btn_trocar = QPushButton("Trocar Obra")
+        self.btn_trocar.setStyleSheet("""
+            QPushButton {
+                min-height: 28px;
+                max-height: 30px;
+                padding: 2px 12px;
+                background-color: #27ae60;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2ecc71;
+            }
+        """)
+        self.btn_trocar.clicked.connect(self.show_obras_list)
+        layout.addWidget(self.btn_trocar)
+
+        # Separador visual
+        separator2 = QLabel("|")
+        separator2.setStyleSheet("color: rgba(255,255,255,0.3); padding: 0 2px;")
+        layout.addWidget(separator2)
+
+        # Grupo de navegação
         self.btn_dashboard = QPushButton("Dashboard")
         self.btn_dashboard.clicked.connect(self.show_dashboard)
         layout.addWidget(self.btn_dashboard)
@@ -164,10 +237,29 @@ class AppContainer(QMainWindow):
 
         return header
 
+    def _carregar_combo_obras(self) -> None:
+        self.combo_obras.blockSignals(True)
+        self.combo_obras.clear()
+        obras = self.obra_service.listar()
+        for obra in obras:
+            self.combo_obras.addItem(f"{obra.codigo} - {obra.nome}", obra.id)
+        self.combo_obras.blockSignals(False)
+
+    def _obra_selecionada(self, index: int) -> None:
+        if index < 0:
+            return
+        obra_id = self.combo_obras.itemData(index)
+        if obra_id:
+            self.set_obra_ativa(obra_id)
+            obra_ativa_id = self.config_service.obter_obra_ativa()
+            if self.stack.currentWidget() == self.dashboard_screen:
+                self.dashboard_screen.carregar(obra_id)
+
     def _check_first_run(self) -> None:
         if not self.empresa_service.empresa_configurada():
             self.show_welcome()
         else:
+            self._carregar_combo_obras()
             obra_ativa_id = self.config_service.obter_obra_ativa()
             if obra_ativa_id:
                 self.set_obra_ativa(obra_ativa_id)
@@ -198,6 +290,8 @@ class AppContainer(QMainWindow):
         if obra_ativa_id is None:
             self.show_obras_list()
             return
+        self._carregar_combo_obras()
+        self._selecionar_obra_no_combo(obra_ativa_id)
         self.dashboard_screen.carregar(obra_ativa_id)
         self.stack.setCurrentWidget(self.dashboard_screen)
 
@@ -221,12 +315,21 @@ class AppContainer(QMainWindow):
         self.config_service.definir_obra_ativa(obra_id)
         if obra_id:
             obra = self.obra_service.obter(obra_id)
-            self._update_context(f"Obra ativa: {obra.nome if obra else ''}")
+            nome = obra.nome if obra else ""
+            self._update_context(nome)
+            self._selecionar_obra_no_combo(obra_id)
         else:
             self._update_context("")
 
+    def _selecionar_obra_no_combo(self, obra_id: int) -> None:
+        self.combo_obras.blockSignals(True)
+        index = self.combo_obras.findData(obra_id)
+        if index >= 0:
+            self.combo_obras.setCurrentIndex(index)
+        self.combo_obras.blockSignals(False)
+
     def _update_context(self, text: str) -> None:
-        self.context_label.setText(text)
+        pass
 
     def _gerar_backup(self) -> None:
         from PySide6.QtWidgets import QFileDialog, QMessageBox
