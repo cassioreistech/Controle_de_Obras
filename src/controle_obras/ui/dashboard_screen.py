@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -80,6 +81,10 @@ class DashboardScreen(QWidget):
             ["Data", "Descrição", "Tipo", "Valor"]
         )
         self.table_lancamentos.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table_lancamentos.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table_lancamentos.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.table_lancamentos.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.table_lancamentos.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         layout.addWidget(self.table_lancamentos)
 
     def _create_card(self, title: str, value: str) -> QWidget:
@@ -121,8 +126,6 @@ class DashboardScreen(QWidget):
             self.table_lancamentos.setItem(row, 1, QTableWidgetItem(lanc.descricao))
             self.table_lancamentos.setItem(row, 2, QTableWidgetItem(lanc.origem_informacao))
             self.table_lancamentos.setItem(row, 3, QTableWidgetItem(f"R$ {lanc.valor_total:,.2f}"))
-
-        self.table_lancamentos.resizeColumnsToContents()
 
     def _update_card(self, card: QWidget, value: str) -> None:
         for child in card.findChildren(QLabel):

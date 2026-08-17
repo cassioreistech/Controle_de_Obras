@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
+    QFileDialog,
     QFormLayout,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -27,6 +30,12 @@ if TYPE_CHECKING:
     from controle_obras.ui.app_container import AppContainer
 
 
+ORIGENS_COM_ANEXO_OBRIGATORIO = {
+    "Planilha de diretoria",
+    "Planilha de engenharia",
+}
+
+
 class LancamentosScreen(QWidget):
     """Tela para cadastro e listagem de lançamentos."""
 
@@ -34,6 +43,7 @@ class LancamentosScreen(QWidget):
         super().__init__()
         self._parent = parent
         self._obra_id: int | None = None
+        self._arquivo_anexo: Path | None = None
         self._init_ui()
 
     def _init_ui(self) -> None:
@@ -59,8 +69,13 @@ class LancamentosScreen(QWidget):
         self.input_origem.addItems(
             ["Manual", "Planilha de diretoria", "Planilha de engenharia", "Nota geral", "Cupom"]
         )
+        self.input_origem.currentTextChanged.connect(self._origem_alterada)
         self.input_observacoes = QTextEdit()
         self.input_observacoes.setMaximumHeight(80)
+
+        self.lbl_anexo = QLabel("Nenhum arquivo selecionado")
+        self.lbl_anexo.setStyleSheet("color: #7f8c8d; font-size: 12px;")
+        self.lbl_anexo.setVisible(False)
 
         form_layout.addRow("Data", self.input_data)
         form_layout.addRow("Tipo", self.input_tipo)
@@ -71,6 +86,7 @@ class LancamentosScreen(QWidget):
         form_layout.addRow("Valor Unitário", self.input_valor_unitario)
         form_layout.addRow("Valor Total *", self.input_valor_total)
         form_layout.addRow("Origem", self.input_origem)
+        form_layout.addRow("Anexo vinculado", self.lbl_anexo)
         form_layout.addRow("Observações", self.input_observacoes)
 
         layout.addLayout(form_layout)
@@ -79,10 +95,12 @@ class LancamentosScreen(QWidget):
         btn_layout.addStretch()
 
         btn_calcular = QPushButton("Calcular Total")
+        btn_calcular.setToolTip("Calcular valor total a partir da quantidade e valor unitário")
         btn_calcular.clicked.connect(self._calcular_total)
         btn_layout.addWidget(btn_calcular)
 
         btn_salvar = QPushButton("Salvar Lançamento")
+        btn_salvar.setToolTip("Salvar o lançamento e anexar arquivo se houver")
         btn_salvar.setStyleSheet("padding: 10px 24px; background-color: #27ae60; color: white;")
         btn_salvar.clicked.connect(self._salvar)
         btn_layout.addWidget(btn_salvar)
@@ -93,12 +111,19 @@ class LancamentosScreen(QWidget):
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(["Data", "Descrição", "Tipo", "Origem", "Valor"])
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
         layout.addWidget(self.table)
 
     def carregar(self, obra_id: int) -> None:
         self._obra_id = obra_id
         self._carregar_tipos()
         self._carregar_lancamentos()
+        self._arquivo_anexo = None
+        self._atualizar_label_anexo()
 
     def _carregar_tipos(self) -> None:
         self.input_tipo.clear()
@@ -120,7 +145,45 @@ class LancamentosScreen(QWidget):
             self.table.setItem(row, 2, QTableWidgetItem(tipo_nome))
             self.table.setItem(row, 3, QTableWidgetItem(lanc.origem_informacao))
             self.table.setItem(row, 4, QTableWidgetItem(f"R$ {lanc.valor_total:,.2f}"))
-        self.table.resizeColumnsToContents()
+
+    def _origem_alterada(self, origem: str) -> None:
+        if origem in ORIGENS_COM_ANEXO_OBRIGATORIO:
+            self._selecionar_arquivo_anexo(origem)
+        else:
+            self._arquivo_anexo = None
+            self._atualizar_label_anexo()
+
+    def _selecionar_arquivo_anexo(self, origem: str) -> None:
+        tipo_arquivo = "Planilhas (*.xlsx *.xls *.csv *.pdf);;Todos os arquivos (*.*)"
+        arquivo, _ = QFileDialog.getOpenFileName(
+            self,
+            f"Selecionar {origem}",
+            "",
+            tipo_arquivo,
+        )
+        if arquivo:
+            self._arquivo_anexo = Path(arquivo)
+        else:
+            self._arquivo_anexo = None
+            if self.input_origem.currentText() in ORIGENS_COM_ANEXO_OBRIGATORIO:
+                self.input_origem.setCurrentText("Manual")
+        self._atualizar_label_anexo()
+
+    def _atualizar_label_anexo(self) -> None:
+        if self._arquivo_anexo:
+            self.lbl_anexo.setText(f"✓ {self._arquivo_anexo.name}")
+            self.lbl_anexo.setStyleSheet("color: #27ae60; font-size: 12px;")
+            self.lbl_anexo.setVisible(True)
+        else:
+            origem = self.input_origem.currentText()
+            if origem in ORIGENS_COM_ANEXO_OBRIGATORIO:
+                self.lbl_anexo.setText("Nenhum arquivo selecionado (obrigatório)")
+                self.lbl_anexo.setStyleSheet("color: #e74c3c; font-size: 12px;")
+                self.lbl_anexo.setVisible(True)
+            else:
+                self.lbl_anexo.setText("Nenhum arquivo selecionado")
+                self.lbl_anexo.setStyleSheet("color: #7f8c8d; font-size: 12px;")
+                self.lbl_anexo.setVisible(False)
 
     def _calcular_total(self) -> None:
         try:
@@ -140,6 +203,15 @@ class LancamentosScreen(QWidget):
         descricao = self.input_descricao.text().strip()
         if not descricao:
             QMessageBox.warning(self, "Validação", "Descrição é obrigatória.")
+            return
+
+        origem = self.input_origem.currentText()
+        if origem in ORIGENS_COM_ANEXO_OBRIGATORIO and not self._arquivo_anexo:
+            QMessageBox.warning(
+                self,
+                "Validação",
+                f"Para origem '{origem}', é necessário anexar o arquivo correspondente.",
+            )
             return
 
         valor_text = self.input_valor_total.text().strip().replace(".", "").replace(",", ".")
@@ -162,12 +234,24 @@ class LancamentosScreen(QWidget):
             unidade=self.input_unidade.text().strip(),
             valor_unitario=float(unit_text) if unit_text else None,
             valor_total=valor_total,
-            origem_informacao=self.input_origem.currentText(),
+            origem_informacao=origem,
             observacoes=self.input_observacoes.toPlainText().strip(),
         )
 
         try:
-            self._parent.lancamento_service.salvar(lancamento)
+            lancamento_salvo = self._parent.lancamento_service.salvar(lancamento)
+
+            if self._arquivo_anexo and lancamento_salvo.id:
+                obra = self._parent.obra_service.obter(self._obra_id)
+                if obra:
+                    self._parent.anexo_service.anexar_arquivo(
+                        obra_codigo=obra.codigo,
+                        arquivo_origem=self._arquivo_anexo,
+                        tipo_anexo=origem,
+                        obra_id=self._obra_id,
+                        lancamento_id=lancamento_salvo.id,
+                    )
+
             QMessageBox.information(self, "Sucesso", "Lançamento salvo.")
             self._limpar_formulario()
             self._carregar_lancamentos()
@@ -185,3 +269,5 @@ class LancamentosScreen(QWidget):
         self.input_valor_total.clear()
         self.input_origem.setCurrentIndex(0)
         self.input_observacoes.clear()
+        self._arquivo_anexo = None
+        self._atualizar_label_anexo()

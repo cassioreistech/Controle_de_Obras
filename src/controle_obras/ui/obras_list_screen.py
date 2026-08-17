@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QMenu,
@@ -77,7 +78,9 @@ class ObrasListScreen(QWidget):
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._menu_contexto)
         self.table.doubleClicked.connect(self._duplo_clique)
-        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
         layout.addWidget(self.table)
 
         self.lbl_vazio = QLabel("Nenhuma obra cadastrada. Clique em 'Nova Obra' para começar.")
@@ -128,8 +131,6 @@ class ObrasListScreen(QWidget):
                         item.setToolTip("Obra ativa selecionada")
 
             self.table.item(row, 0).setData(Qt.ItemDataRole.UserRole, obra.id)
-
-        self.table.resizeColumnsToContents()
 
     def _duplo_clique(self) -> None:
         obra_id = self._obra_id_selecionada()
