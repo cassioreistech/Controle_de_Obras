@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QColor, QDesktopServices
 from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
@@ -30,6 +30,27 @@ from controle_obras.domain.models import Lancamento
 if TYPE_CHECKING:
     from controle_obras.ui.app_container import AppContainer
 
+from controle_obras.ui.styles import (
+    BACKGROUND,
+    BORDER,
+    DANGER,
+    DANGER_LIGHT,
+    INFO,
+    INFO_LIGHT,
+    PRIMARY,
+    SUCCESS,
+    SUCCESS_HOVER,
+    SURFACE,
+    TEXT_MUTED,
+    TEXT_PRIMARY,
+    TEXT_SECONDARY,
+    get_action_button_style,
+    get_input_style,
+    get_screen_title_style,
+    get_success_button_style,
+    get_table_style,
+)
+
 
 ORIGENS_COM_ANEXO_OBRIGATORIO = {
     "Planilha de diretoria",
@@ -50,59 +71,83 @@ class LancamentosScreen(QWidget):
 
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
+        layout.setSpacing(12)
+        layout.setContentsMargins(16, 16, 16, 16)
 
         title = QLabel("Lançamentos da Obra")
-        title.setStyleSheet("font-size: 24px; font-weight: bold; color: #2c3e50;")
+        title.setStyleSheet(get_screen_title_style())
         layout.addWidget(title)
 
         form_layout = QGridLayout()
-        form_layout.setContentsMargins(4, 4, 4, 4)
-        form_layout.setHorizontalSpacing(10)
-        form_layout.setVerticalSpacing(5)
+        form_layout.setContentsMargins(8, 8, 8, 8)
+        form_layout.setHorizontalSpacing(12)
+        form_layout.setVerticalSpacing(8)
 
         self.input_data = QDateEdit()
         self.input_data.setCalendarPopup(True)
         self.input_data.setDate(date.today())
-        self.input_data.setMinimumHeight(28)
+        self.input_data.setStyleSheet(get_input_style())
         self.input_tipo = QComboBox()
-        self.input_tipo.setMinimumHeight(28)
+        self.input_tipo.setStyleSheet(get_input_style())
         self.input_descricao = QLineEdit()
-        self.input_descricao.setMinimumHeight(28)
+        self.input_descricao.setStyleSheet(get_input_style())
         self.input_quantidade = QLineEdit()
         self.input_quantidade.setPlaceholderText("0")
         self.input_quantidade.textChanged.connect(self._auto_calcular_total)
-        self.input_quantidade.setMinimumHeight(28)
+        self.input_quantidade.setStyleSheet(get_input_style())
         self.input_unidade = QLineEdit()
-        self.input_unidade.setMinimumHeight(28)
+        self.input_unidade.setStyleSheet(get_input_style())
         self.input_valor_unitario = QLineEdit()
         self.input_valor_unitario.setPlaceholderText("0,00")
         self.input_valor_unitario.textChanged.connect(self._auto_calcular_total)
-        self.input_valor_unitario.setMinimumHeight(28)
+        self.input_valor_unitario.setStyleSheet(get_input_style())
         self.input_valor_total = QLineEdit()
         self.input_valor_total.setPlaceholderText("0,00")
         self.input_valor_total.setReadOnly(True)
-        self.input_valor_total.setMinimumHeight(28)
+        self.input_valor_total.setStyleSheet(get_input_style())
         self.input_origem = QComboBox()
         self.input_origem.addItems(
             ["Manual", "Planilha de diretoria", "Planilha de engenharia", "Nota geral", "Cupom"]
         )
         self.input_origem.currentTextChanged.connect(self._origem_alterada)
-        self.input_origem.setMinimumHeight(28)
+        self.input_origem.setStyleSheet(get_input_style())
         self.input_observacoes = QLineEdit()
         self.input_observacoes.setPlaceholderText("Observações opcionais")
-        self.input_observacoes.setMinimumHeight(28)
+        self.input_observacoes.setStyleSheet(get_input_style())
 
         self.lbl_anexo = QLabel("Nenhum arquivo selecionado")
-        self.lbl_anexo.setStyleSheet("color: #7f8c8d; font-size: 12px;")
+        self.lbl_anexo.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 12px;")
         self.lbl_anexo.setVisible(False)
 
         self.btn_ver_anexo = QPushButton("👁 Ver")
-        self.btn_ver_anexo.setStyleSheet("padding: 2px 6px; background-color: #3498db; color: white; border-radius: 3px; font-size: 11px;")
+        self.btn_ver_anexo.setStyleSheet(f"""
+            QPushButton {{
+                padding: 2px 6px;
+                background-color: {INFO};
+                color: white;
+                border-radius: 3px;
+                font-size: 11px;
+            }}
+            QPushButton:hover {{
+                background-color: {INFO_LIGHT};
+            }}
+        """)
         self.btn_ver_anexo.setVisible(False)
         self.btn_ver_anexo.clicked.connect(self._ver_anexo_atual)
 
         self.btn_excluir_anexo = QPushButton("🗑")
-        self.btn_excluir_anexo.setStyleSheet("padding: 2px 6px; background-color: #e74c3c; color: white; border-radius: 3px; font-size: 11px;")
+        self.btn_excluir_anexo.setStyleSheet(f"""
+            QPushButton {{
+                padding: 2px 6px;
+                background-color: {DANGER};
+                color: white;
+                border-radius: 3px;
+                font-size: 11px;
+            }}
+            QPushButton:hover {{
+                background-color: {DANGER_LIGHT};
+            }}
+        """)
         self.btn_excluir_anexo.setVisible(False)
         self.btn_excluir_anexo.clicked.connect(self._excluir_anexo_atual)
 
@@ -115,7 +160,7 @@ class LancamentosScreen(QWidget):
 
         def lbl(text):
             l = QLabel(text)
-            l.setStyleSheet("font-size: 12px; color: #2c3e50;")
+            l.setStyleSheet(f"font-size: 12px; color: {TEXT_SECONDARY}; font-weight: 500;")
             l.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             return l
 
@@ -151,7 +196,8 @@ class LancamentosScreen(QWidget):
 
         btn_salvar = QPushButton("Salvar Lançamento")
         btn_salvar.setToolTip("Salvar o lançamento e anexar arquivo se houver")
-        btn_salvar.setStyleSheet("padding: 6px 16px; background-color: #27ae60; color: white; font-weight: bold; border-radius: 4px;")
+        btn_salvar.setStyleSheet(get_success_button_style())
+        btn_salvar.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_salvar.clicked.connect(self._salvar)
         form_layout.addWidget(btn_salvar, 4, 6, 1, 2)
 
@@ -177,16 +223,7 @@ class LancamentosScreen(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)
         self.table.verticalHeader().setVisible(False)
-        self.table.setStyleSheet("""
-            QTableWidget::item:selected {
-                background-color: #3498db;
-                color: white;
-            }
-            QTableWidget::item:selected:!active {
-                background-color: #3498db;
-                color: white;
-            }
-        """)
+        self.table.setStyleSheet(get_table_style(PRIMARY))
         self.table.viewport().installEventFilter(self)
         layout.addWidget(self.table)
 
@@ -214,8 +251,11 @@ class LancamentosScreen(QWidget):
             item_data.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.table.setItem(row, 0, item_data)
 
-            item_desc = QTableWidgetItem(lanc.descricao)
+            item_desc = QTableWidgetItem(lanc.descricao.upper())
             item_desc.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_desc = item_desc.font()
+            font_desc.setBold(True)
+            item_desc.setFont(font_desc)
             self.table.setItem(row, 1, item_desc)
 
             tipo_nome = self.input_tipo.itemText(
