@@ -76,6 +76,7 @@ class LancamentosScreen(QWidget):
 
         title = QLabel("Lançamentos da Obra")
         title.setStyleSheet(get_screen_title_style())
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
 
         form_layout = QGridLayout()

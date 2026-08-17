@@ -304,8 +304,11 @@ class DashboardScreen(QWidget):
             item_data.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.table_lancamentos.setItem(row, 0, item_data)
 
-            item_desc = QTableWidgetItem(mov["descricao"])
-            item_desc.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            item_desc = QTableWidgetItem(mov["descricao"].upper())
+            item_desc.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_desc = item_desc.font()
+            font_desc.setBold(True)
+            item_desc.setFont(font_desc)
             self.table_lancamentos.setItem(row, 1, item_desc)
 
             item_tipo = QTableWidgetItem(mov["tipo"])
