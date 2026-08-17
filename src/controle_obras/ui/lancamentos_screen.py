@@ -280,7 +280,7 @@ class LancamentosScreen(QWidget):
         self.table.horizontalHeader().resizeSection(6, 75)
         
         self.table.verticalHeader().setVisible(False)
-        self.table.verticalHeader().setDefaultSectionSize(36)
+        self.table.verticalHeader().setDefaultSectionSize(42)
         self.table.setStyleSheet(get_table_style(PRIMARY))
         self.table.viewport().installEventFilter(self)
 
@@ -343,12 +343,15 @@ class LancamentosScreen(QWidget):
             btn_editar.setToolTip("Editar lançamento")
             btn_editar.setStyleSheet(f"""
                 QPushButton {{
-                    padding: 4px 8px;
+                    padding: 2px 6px;
                     background-color: {INFO};
                     color: white;
                     border: none;
-                    border-radius: 4px;
-                    font-size: 14px;
+                    border-radius: 3px;
+                    font-size: 12px;
+                    min-width: 28px;
+                    min-height: 28px;
+                    max-height: 30px;
                 }}
                 QPushButton:hover {{
                     background-color: {INFO_HOVER};
@@ -363,12 +366,15 @@ class LancamentosScreen(QWidget):
             btn_excluir.setToolTip("Excluir lançamento")
             btn_excluir.setStyleSheet(f"""
                 QPushButton {{
-                    padding: 4px 8px;
+                    padding: 2px 6px;
                     background-color: {DANGER};
                     color: white;
                     border: none;
-                    border-radius: 4px;
-                    font-size: 14px;
+                    border-radius: 3px;
+                    font-size: 12px;
+                    min-width: 28px;
+                    min-height: 28px;
+                    max-height: 30px;
                 }}
                 QPushButton:hover {{
                     background-color: {DANGER_HOVER};
@@ -467,7 +473,7 @@ class LancamentosScreen(QWidget):
             tipo_lancamento_id=self.input_tipo.currentData(),
             data_lancamento=self.input_data.date().toPython(),
             descricao=descricao,
-            complemento=self.input_complemento.text().strip(),
+            complemento="",
             quantidade=float(qtd_text) if qtd_text else None,
             unidade=self.input_unidade.text().strip(),
             valor_unitario=float(unit_text) if unit_text else None,
@@ -503,7 +509,6 @@ class LancamentosScreen(QWidget):
         self.input_data.setDate(date.today())
         self.input_tipo.setCurrentIndex(0)
         self.input_descricao.clear()
-        self.input_complemento.clear()
         self.input_quantidade.clear()
         self.input_unidade.clear()
         self.input_valor_unitario.clear()
@@ -541,7 +546,6 @@ class LancamentosScreen(QWidget):
             if idx >= 0:
                 self.input_tipo.setCurrentIndex(idx)
         self.input_descricao.setText(lancamento.descricao)
-        self.input_complemento.setText(lancamento.complemento)
         self.input_quantidade.setText(str(lancamento.quantidade) if lancamento.quantidade else "")
         self.input_unidade.setText(lancamento.unidade)
         self.input_valor_unitario.setText(f"R$ {lancamento.valor_unitario:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if lancamento.valor_unitario else "")

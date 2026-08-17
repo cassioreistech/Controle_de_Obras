@@ -118,6 +118,7 @@ class ObrasListScreen(QWidget):
         self.table.horizontalHeader().resizeSection(6, 70)
         self.table.horizontalHeader().resizeSection(7, 75)
         self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(42)
         layout.addWidget(self.table)
 
         self.lbl_vazio = QLabel("Nenhuma obra cadastrada. Clique em 'Nova Obra' para começar.")
@@ -211,12 +212,15 @@ class ObrasListScreen(QWidget):
             btn_editar.setToolTip("Editar obra")
             btn_editar.setStyleSheet(f"""
                 QPushButton {{
-                    padding: 4px 8px;
+                    padding: 2px 6px;
                     background-color: {INFO};
                     color: white;
                     border: none;
-                    border-radius: 4px;
-                    font-size: 14px;
+                    border-radius: 3px;
+                    font-size: 12px;
+                    min-width: 28px;
+                    min-height: 28px;
+                    max-height: 30px;
                 }}
                 QPushButton:hover {{
                     background-color: {INFO_HOVER};
@@ -231,12 +235,15 @@ class ObrasListScreen(QWidget):
             btn_excluir.setToolTip("Excluir obra")
             btn_excluir.setStyleSheet(f"""
                 QPushButton {{
-                    padding: 4px 8px;
+                    padding: 2px 6px;
                     background-color: {DANGER};
                     color: white;
                     border: none;
-                    border-radius: 4px;
-                    font-size: 14px;
+                    border-radius: 3px;
+                    font-size: 12px;
+                    min-width: 28px;
+                    min-height: 28px;
+                    max-height: 30px;
                 }}
                 QPushButton:hover {{
                     background-color: {DANGER_HOVER};
