@@ -4,6 +4,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
+    QDialog,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -201,6 +202,12 @@ class AppContainer(QMainWindow):
         self.btn_restore.setStyleSheet(get_header_button_style())
         right_layout.addWidget(self.btn_restore)
 
+        self.btn_config = QPushButton("⚙")
+        self.btn_config.setToolTip("Configurações")
+        self.btn_config.clicked.connect(self._abrir_configuracoes)
+        self.btn_config.setStyleSheet(get_header_button_style())
+        right_layout.addWidget(self.btn_config)
+
         main_layout.addLayout(right_layout)
 
         return header
@@ -366,6 +373,133 @@ class AppContainer(QMainWindow):
         except Exception as e:
             self.setEnabled(True)
             QMessageBox.critical(self, "Erro", f"Falha ao restaurar backup:\n{str(e)}")
+
+    def _abrir_configuracoes(self) -> None:
+        from PySide6.QtWidgets import QFormLayout, QLineEdit, QMessageBox
+
+        empresa = self.empresa_service.obter()
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Configurações")
+        dialog.setMinimumWidth(500)
+        dialog.setMinimumHeight(450)
+
+        layout = QVBoxLayout(dialog)
+
+        # Título
+        titulo = QLabel("Configurações do Sistema")
+        titulo.setStyleSheet("font-size: 16px; font-weight: bold;")
+        layout.addWidget(titulo)
+
+        # Seção: Dados da Empresa
+        secao_empresa = QLabel("Dados da Empresa")
+        secao_empresa.setStyleSheet("font-size: 13px; font-weight: bold; color: #1B2A4A; margin-top: 10px;")
+        layout.addWidget(secao_empresa)
+
+        form_layout = QFormLayout()
+
+        self.input_razao_social = QLineEdit(empresa.razao_social if empresa else "")
+        form_layout.addRow("Razão Social *:", self.input_razao_social)
+
+        self.input_nome_fantasia = QLineEdit(empresa.nome_fantasia if empresa else "")
+        form_layout.addRow("Nome Fantasia:", self.input_nome_fantasia)
+
+        self.input_cnpj_config = QLineEdit(empresa.cnpj if empresa else "")
+        form_layout.addRow("CNPJ:", self.input_cnpj_config)
+
+        self.input_telefone_config = QLineEdit(empresa.telefone if empresa else "")
+        form_layout.addRow("Telefone:", self.input_telefone_config)
+
+        self.input_email_config = QLineEdit(empresa.email if empresa else "")
+        form_layout.addRow("E-mail:", self.input_email_config)
+
+        self.input_endereco_config = QLineEdit(empresa.endereco if empresa else "")
+        form_layout.addRow("Endereço:", self.input_endereco_config)
+
+        self.input_cidade_config = QLineEdit(empresa.cidade if empresa else "")
+        form_layout.addRow("Cidade:", self.input_cidade_config)
+
+        self.input_uf_config = QLineEdit(empresa.uf if empresa else "")
+        form_layout.addRow("UF:", self.input_uf_config)
+
+        self.input_responsavel_config = QLineEdit(empresa.responsavel if empresa else "")
+        form_layout.addRow("Responsável:", self.input_responsavel_config)
+
+        layout.addLayout(form_layout)
+
+        # Seção: Informações do Software
+        secao_software = QLabel("Informações do Software")
+        secao_software.setStyleSheet("font-size: 13px; font-weight: bold; color: #1B2A4A; margin-top: 10px;")
+        layout.addWidget(secao_software)
+
+        info_software = QLabel(
+            "<b>Versão:</b> 1.0.0<br>"
+            "<b>Desenvolvido por:</b> Cassio Vicente<br>"
+            "<b>Tecnologias:</b> Python, PySide6, SQLite<br>"
+            "<b>Ano:</b> 2026"
+        )
+        info_software.setStyleSheet("font-size: 12px;")
+        layout.addWidget(info_software)
+
+        # Botões
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+
+        btn_cancelar = QPushButton("Cancelar")
+        btn_cancelar.clicked.connect(dialog.close)
+        btn_layout.addWidget(btn_cancelar)
+
+        btn_salvar = QPushButton("Salvar")
+        btn_salvar.setStyleSheet(f"""
+            QPushButton {{
+                padding: 8px 20px;
+                background-color: {PRIMARY};
+                color: white;
+                border-radius: 5px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: #243656;
+            }}
+        """)
+        btn_salvar.clicked.connect(lambda: self._salvar_configuracoes(dialog))
+        btn_layout.addWidget(btn_salvar)
+
+        layout.addLayout(btn_layout)
+
+        dialog.exec()
+
+    def _salvar_configuracoes(self, dialog: QDialog) -> None:
+        from PySide6.QtWidgets import QMessageBox
+
+        from controle_obras.domain.models import Empresa
+
+        razao = self.input_razao_social.text().strip()
+        if not razao:
+            QMessageBox.warning(dialog, "Validação", "Razão social é obrigatória.")
+            return
+
+        try:
+            empresa = self.empresa_service.obter()
+            if not empresa:
+                empresa = Empresa()
+
+            empresa.razao_social = razao
+            empresa.nome_fantasia = self.input_nome_fantasia.text().strip()
+            empresa.cnpj = self.input_cnpj_config.text().strip()
+            empresa.telefone = self.input_telefone_config.text().strip()
+            empresa.email = self.input_email_config.text().strip()
+            empresa.endereco = self.input_endereco_config.text().strip()
+            empresa.cidade = self.input_cidade_config.text().strip()
+            empresa.uf = self.input_uf_config.text().strip()
+            empresa.responsavel = self.input_responsavel_config.text().strip()
+
+            self.empresa_service.salvar(empresa)
+
+            QMessageBox.information(dialog, "Sucesso", "Configurações salvas com sucesso!")
+            dialog.close()
+        except Exception as e:
+            QMessageBox.critical(dialog, "Erro", f"Falha ao salvar configurações:\n{str(e)}")
 
 
 def main() -> None:

@@ -129,25 +129,50 @@ def get_header_button_style():
 
 def get_combo_header_style():
     """Estilo do combo de obras no cabeçalho."""
-    return f"""
-        QComboBox {{
+    return """
+        QComboBox {
             min-height: 30px;
             padding: 4px 10px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: {RADIUS['medium']};
-            background-color: rgba(255, 255, 255, 0.1);
-            color: {SURFACE};
-            font-size: {TYPOGRAPHY['input']['size']};
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            color: #1F2937;
+            background-color: #FFFFFF;
+            selection-color: #1F2937;
+            selection-background-color: #DCEBFA;
+            font-size: 13px;
             font-weight: 600;
             min-width: 250px;
-        }}
-        QComboBox:hover {{
-            border-color: rgba(255, 255, 255, 0.5);
-        }}
-        QComboBox::drop-down {{
+        }
+        QComboBox:hover {
+            border-color: #94A3B8;
+        }
+        QComboBox::drop-down {
             border: none;
             padding-right: 8px;
-        }}
+        }
+        QComboBox QAbstractItemView {
+            color: #1F2937;
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            selection-color: #FFFFFF;
+            selection-background-color: #2563A6;
+            outline: none;
+        }
+        QComboBox QAbstractItemView::item {
+            color: #1F2937;
+            background-color: #FFFFFF;
+            min-height: 30px;
+            padding: 6px 8px;
+        }
+        QComboBox QAbstractItemView::item:hover {
+            color: #1F2937;
+            background-color: #DCEBFA;
+        }
+        QComboBox QAbstractItemView::item:selected {
+            color: #FFFFFF;
+            background-color: #2563A6;
+        }
     """
 
 
