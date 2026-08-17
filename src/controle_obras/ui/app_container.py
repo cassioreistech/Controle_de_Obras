@@ -136,21 +136,28 @@ class AppContainer(QMainWindow):
                 background-color: rgba(255, 255, 255, 0.2);
             }
         """)
-        layout = QHBoxLayout(header)
-        layout.setContentsMargins(12, 0, 12, 0)
-        layout.setSpacing(6)
+        main_layout = QHBoxLayout(header)
+        main_layout.setContentsMargins(12, 0, 12, 0)
+        main_layout.setSpacing(0)
 
         # Grupo esquerdo: título
+        left_layout = QHBoxLayout()
+        left_layout.setSpacing(6)
         self.title_label = QLabel("Controle de Obras")
         self.title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: white; letter-spacing: 1px; padding: 0;")
-        layout.addWidget(self.title_label)
+        left_layout.addWidget(self.title_label)
+        main_layout.addLayout(left_layout)
 
-        layout.addStretch()
+        main_layout.addStretch(1)
 
-        # Grupo central/direito: seletor da obra
-        lbl_obra = QLabel("Obra:")
-        lbl_obra.setStyleSheet("font-size: 11px; padding: 0; color: #bdc3c7;")
-        layout.addWidget(lbl_obra)
+        # Grupo central: seletor da obra (centralizado)
+        center_layout = QHBoxLayout()
+        center_layout.setSpacing(8)
+
+        lbl_obra = QLabel("OBRA:")
+        lbl_obra.setStyleSheet("font-size: 14px; padding: 0; color: #e74c3c; font-weight: bold;")
+        lbl_obra.setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        center_layout.addWidget(lbl_obra)
 
         self.combo_obras = QComboBox()
         self.combo_obras.setToolTip("Selecionar obra ativa")
@@ -191,7 +198,7 @@ class AppContainer(QMainWindow):
                 color: white;
             }
         """)
-        layout.addWidget(self.combo_obras)
+        center_layout.addWidget(self.combo_obras)
 
         self.btn_trocar = QPushButton("Trocar Obra")
         self.btn_trocar.setStyleSheet("""
@@ -211,29 +218,37 @@ class AppContainer(QMainWindow):
             }
         """)
         self.btn_trocar.clicked.connect(self.show_obras_list)
-        layout.addWidget(self.btn_trocar)
+        center_layout.addWidget(self.btn_trocar)
 
-        # Separador visual
-        separator2 = QLabel("|")
-        separator2.setStyleSheet("color: rgba(255,255,255,0.3); padding: 0 2px;")
-        layout.addWidget(separator2)
+        main_layout.addLayout(center_layout)
 
-        # Grupo de navegação
+        main_layout.addStretch(1)
+
+        # Grupo direito: navegação
+        right_layout = QHBoxLayout()
+        right_layout.setSpacing(6)
+
+        separator = QLabel("|")
+        separator.setStyleSheet("color: rgba(255,255,255,0.3); padding: 0 4px;")
+        right_layout.addWidget(separator)
+
         self.btn_dashboard = QPushButton("Dashboard")
         self.btn_dashboard.clicked.connect(self.show_dashboard)
-        layout.addWidget(self.btn_dashboard)
+        right_layout.addWidget(self.btn_dashboard)
 
         self.btn_obras = QPushButton("Obras")
         self.btn_obras.clicked.connect(self.show_obras_list)
-        layout.addWidget(self.btn_obras)
+        right_layout.addWidget(self.btn_obras)
 
         self.btn_backup = QPushButton("Backup")
         self.btn_backup.clicked.connect(self._gerar_backup)
-        layout.addWidget(self.btn_backup)
+        right_layout.addWidget(self.btn_backup)
 
         self.btn_restore = QPushButton("Restaurar")
         self.btn_restore.clicked.connect(self._restaurar_backup)
-        layout.addWidget(self.btn_restore)
+        right_layout.addWidget(self.btn_restore)
+
+        main_layout.addLayout(right_layout)
 
         return header
 
