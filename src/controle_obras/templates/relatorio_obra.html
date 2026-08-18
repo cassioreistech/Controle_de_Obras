@@ -56,17 +56,17 @@
         <table width="100%" repeat="1">
             <thead>
                 <tr>
-                    <th width="80pt">Data</th>
-                    <th width="300pt">Descrição</th>
-                    <th width="110pt" style="text-align: right;">Valor</th>
+                    <th width="80pt" style="text-align: center;">Data</th>
+                    <th width="300pt" style="text-align: center;">Descrição</th>
+                    <th width="110pt" style="text-align: center;">Valor</th>
                 </tr>
             </thead>
             <tbody>
                 {% for aditivo in aditivos %}
                 <tr>
-                    <td width="80pt" style="vertical-align: middle; padding-left: 5px; padding-right: 5px;">{{ aditivo.data }}</td>
-                    <td width="300pt" style="vertical-align: middle; padding-left: 5px; padding-right: 5px;">{{ aditivo.descricao }}</td>
-                    <td width="110pt" style="vertical-align: middle; text-align: right; white-space: nowrap; padding-left: 5px; padding-right: 5px;">R$ {{ aditivo.valor }}</td>
+                    <td width="80pt" style="text-align: left; vertical-align: middle; padding: 4px;">{{ aditivo.data }}</td>
+                    <td width="300pt" style="text-align: left; vertical-align: middle; padding: 4px;">{{ aditivo.descricao }}</td>
+                    <td width="110pt" style="text-align: right; white-space: nowrap; vertical-align: middle; padding: 4px;">R$ {{ aditivo.valor }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
