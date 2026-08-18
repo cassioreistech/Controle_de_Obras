@@ -172,6 +172,7 @@ class BackupService:
 
         with zipfile.ZipFile(caminho_zip, "r") as zf:
             self._validar_estrutura_pacote(zf)
+            self._validar_membros_seguros(zf)
             manifest = json.loads(zf.read("manifest.json"))
             self._validar_manifesto(manifest)
 
@@ -210,6 +211,23 @@ class BackupService:
         for required in REQUIRED_PATHS:
             if not any(name.startswith(required) or name == required for name in arquivos):
                 raise RestoreValidationError(f"Backup inválido: '{required}' não encontrado.")
+
+    def _validar_membros_seguros(self, zf: zipfile.ZipFile) -> None:
+        """Rejeita membros com path traversal (zip slip).
+
+        Impede que um backup malicioso com membros do tipo '../../algo'
+        ou caminhos absolutos escreva fora do diretório de extração.
+        """
+        for name in zf.namelist():
+            normalized = name.replace("\\", "/")
+            if normalized.startswith("/"):
+                raise RestoreValidationError(
+                    f"Backup inválido: membro com caminho absoluto: {name}"
+                )
+            if ".." in normalized.split("/"):
+                raise RestoreValidationError(
+                    f"Backup inválido: membro com path traversal: {name}"
+                )
 
     def _validar_manifesto(self, manifest: dict[str, Any]) -> None:
         campos_obrigatorios = [

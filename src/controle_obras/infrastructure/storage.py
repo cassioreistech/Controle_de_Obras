@@ -42,10 +42,16 @@ class AppStorage:
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_original = Path(original_name).name
+        # Sanitiza o código da obra para impedir path traversal
+        safe_codigo = "".join(
+            c for c in obra_codigo if c.isalnum() or c in "._-"
+        ).strip(".")
+        if not safe_codigo:
+            safe_codigo = "SEM_CODIGO"
         if lancamento_id:
-            relative = f"OBRA_{obra_codigo}/lancamentos/LANC_{lancamento_id:04d}/{timestamp}_{safe_original}"
+            relative = f"OBRA_{safe_codigo}/lancamentos/LANC_{lancamento_id:04d}/{timestamp}_{safe_original}"
         else:
-            relative = f"OBRA_{obra_codigo}/obra/{timestamp}_{safe_original}"
+            relative = f"OBRA_{safe_codigo}/obra/{timestamp}_{safe_original}"
         return relative
 
 
