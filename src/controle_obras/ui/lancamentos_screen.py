@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QDesktopServices
+from PySide6.QtGui import QColor, QDesktopServices, QIcon, QPainter, QPixmap
+from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
@@ -382,49 +383,82 @@ class LancamentosScreen(QWidget):
             valor_item.setForeground(Qt.GlobalColor.darkGreen)
             self.table.setItem(row, 4, valor_item)
 
-            # Botão Editar
-            btn_editar = QPushButton("✏")
+            # Botão Editar (ícone SVG: edit-3)
+            btn_editar = QPushButton()
             btn_editar.setToolTip("Editar lançamento")
+            btn_editar.setAccessibleName("Editar lançamento")
+            btn_editar.setFixedSize(30, 30)
+            btn_editar.setCursor(Qt.CursorShape.PointingHandCursor)
+            
+            # SVG inline - ícone de editar mais moderno
+            svg_editar = '''
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+            '''
+            
+            from PySide6.QtGui import QPixmap, QPainter, QIcon
+            from PySide6.QtSvg import QSvgRenderer
+            
+            pixmap = QPixmap(16, 16)
+            pixmap.fill(Qt.GlobalColor.transparent)
+            renderer = QSvgRenderer(svg_editar.encode())
+            painter = QPainter(pixmap)
+            renderer.render(painter)
+            painter.end()
+            btn_editar.setIcon(QIcon(pixmap))
+            btn_editar.setIconSize(pixmap.rect().size())
+            
             btn_editar.setStyleSheet(f"""
                 QPushButton {{
-                    padding: 2px 6px;
                     background-color: {INFO};
-                    color: white;
                     border: none;
-                    border-radius: 3px;
-                    font-size: 12px;
-                    min-width: 28px;
-                    min-height: 28px;
-                    max-height: 30px;
+                    border-radius: 6px;
                 }}
                 QPushButton:hover {{
                     background-color: {INFO_HOVER};
                 }}
             """)
-            btn_editar.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_editar.clicked.connect(lambda checked, lid=lanc.id: self._editar_lancamento(lid))
             self.table.setCellWidget(row, 5, btn_editar)
 
-            # Botão Excluir
-            btn_excluir = QPushButton("🗑")
+            # Botão Excluir (ícone SVG: trash-2)
+            btn_excluir = QPushButton()
             btn_excluir.setToolTip("Excluir lançamento")
+            btn_excluir.setAccessibleName("Excluir lançamento")
+            btn_excluir.setFixedSize(30, 30)
+            btn_excluir.setCursor(Qt.CursorShape.PointingHandCursor)
+            
+            # SVG inline - ícone de lixeira mais moderno
+            svg_excluir = '''
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+            '''
+            
+            pixmap = QPixmap(16, 16)
+            pixmap.fill(Qt.GlobalColor.transparent)
+            renderer = QSvgRenderer(svg_excluir.encode())
+            painter = QPainter(pixmap)
+            renderer.render(painter)
+            painter.end()
+            btn_excluir.setIcon(QIcon(pixmap))
+            btn_excluir.setIconSize(pixmap.rect().size())
+            
             btn_excluir.setStyleSheet(f"""
                 QPushButton {{
-                    padding: 2px 6px;
                     background-color: {DANGER};
-                    color: white;
                     border: none;
-                    border-radius: 3px;
-                    font-size: 12px;
-                    min-width: 28px;
-                    min-height: 28px;
-                    max-height: 30px;
+                    border-radius: 6px;
                 }}
                 QPushButton:hover {{
                     background-color: {DANGER_HOVER};
                 }}
             """)
-            btn_excluir.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_excluir.clicked.connect(lambda checked, lid=lanc.id: self._excluir_lancamento(lid))
             self.table.setCellWidget(row, 6, btn_excluir)
 

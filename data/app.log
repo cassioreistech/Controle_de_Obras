@@ -1910,3 +1910,11 @@ Supported signatures:
 2026-08-18 12:45:09,253 - INFO - controle_obras.infrastructure.backup - Iniciando geração de backup completo.
 2026-08-18 12:45:09,654 - INFO - controle_obras.infrastructure.backup - Backup concluído: C:\Users\cassi\OneDrive\Documentos\Controle de Obras\backup_2026-08-18_12-45-09.zip
 2026-08-18 12:45:09,654 - INFO - controle_obras.infrastructure.backup_history - Histórico: backup - concluido
+2026-08-18 13:18:02,286 - INFO - controle_obras.main - Iniciando aplicacao Controle de Obras
+2026-08-18 13:18:02,330 - INFO - controle_obras.main - QApplication criado
+2026-08-18 13:18:03,136 - INFO - controle_obras.main - AppContainer criado
+2026-08-18 13:18:03,842 - INFO - controle_obras.main - Janela exibida
+2026-08-18 13:20:05,345 - INFO - controle_obras.main - Iniciando aplicacao Controle de Obras
+2026-08-18 13:20:05,397 - INFO - controle_obras.main - QApplication criado
+2026-08-18 13:20:05,771 - INFO - controle_obras.main - AppContainer criado
+2026-08-18 13:20:06,319 - INFO - controle_obras.main - Janela exibida
