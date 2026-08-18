@@ -35,8 +35,7 @@ jobs:
       - name: Rodar testes
         run: |
           python -m pytest tests/ -q --tb=short \
-            --ignore=tests/check_template_update.py \
-            --deselect tests/test_relatorio_golden.py::TestRelatorioPDFStructure::test_conteudo_textual_basico
+            --ignore=tests/check_template_update.py
 
       - name: Upload de screenshots (se testes de UI falharem)
         if: failure()
