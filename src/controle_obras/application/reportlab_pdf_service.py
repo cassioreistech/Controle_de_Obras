@@ -429,9 +429,14 @@ def _build_resumo_financeiro(resumo: Any, estilos: dict) -> list:
     # Titulo centralizado
     elementos.append(Paragraph("RESUMO FINANCEIRO", estilos["SecaoCentralizada"]))
     
-    # Tabela de resumo
+    # Tabela de resumo com cabecalho em negrito e maiusculas
     resumo_data = [
-        ["Valor Contratado", "Total Aditivos", "Total Gasto", "Valor Liquido"],
+        [
+            Paragraph("VALOR CONTRATADO", estilos["TabelaCabecalho"]),
+            Paragraph("TOTAL ADITIVOS", estilos["TabelaCabecalho"]),
+            Paragraph("TOTAL GASTO", estilos["TabelaCabecalho"]),
+            Paragraph("VALOR LÍQUIDO", estilos["TabelaCabecalho"]),
+        ],
         [
             Paragraph(_formatar_moeda(resumo.valor_contratado), estilos["TabelaValorAzul"]),
             Paragraph(_formatar_moeda(resumo.total_aditivos), estilos["TabelaValorAzulClaro"]),

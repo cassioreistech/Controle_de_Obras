@@ -122,8 +122,8 @@ class TestRelatorioPDFStructure:
             texto_completo += page.get_text()
         doc.close()
         
-        # Verificar colunas esperadas
-        assert "Valor Contratado" in texto_completo or "Total Aditivos" in texto_completo, \
+        # Verificar colunas esperadas (em maiusculas apos alteracao)
+        assert "VALOR CONTRATADO" in texto_completo or "TOTAL ADITIVOS" in texto_completo, \
             "Colunas do resumo financeiro ausentes"
         
         # Pelo menos um valor numerico formatado
