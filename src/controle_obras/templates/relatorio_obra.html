@@ -64,9 +64,9 @@
             <tbody>
                 {% for aditivo in aditivos %}
                 <tr>
-                    <td width="80pt" style="text-align: left; vertical-align: middle; padding: 4px;">{{ aditivo.data }}</td>
-                    <td width="300pt" style="text-align: left; vertical-align: middle; padding: 4px;">{{ aditivo.descricao }}</td>
-                    <td width="110pt" style="text-align: right; white-space: nowrap; vertical-align: middle; padding: 4px;">R$ {{ aditivo.valor }}</td>
+                    <td width="80pt" style="text-align: left; vertical-align: middle; padding: 5pt;">{{ aditivo.data }}</td>
+                    <td width="300pt" style="text-align: left; vertical-align: middle; padding: 5pt;">{{ aditivo.descricao }}</td>
+                    <td width="110pt" style="text-align: right; white-space: nowrap; vertical-align: middle; padding: 5pt;">R$ {{ aditivo.valor }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -90,10 +90,10 @@
             <tbody>
                 {% for lanc in lancamentos %}
                 <tr>
-                    <td width="80pt" style="text-align: left; vertical-align: middle; padding: 4pt;">{{ lanc.data }}</td>
-                    <td width="285pt" style="text-align: left; vertical-align: middle; padding: 4pt;">{{ lanc.descricao }}</td>
-                    <td width="100pt" style="text-align: left; vertical-align: middle; padding: 4pt;">{{ lanc.tipo }}</td>
-                    <td width="105pt" style="text-align: right; white-space: nowrap; vertical-align: middle; padding: 4pt;">R$ {{ lanc.valor }}</td>
+                    <td width="80pt" style="text-align: left; vertical-align: middle; padding: 5pt;">{{ lanc.data }}</td>
+                    <td width="285pt" style="text-align: left; vertical-align: middle; padding: 5pt;">{{ lanc.descricao }}</td>
+                    <td width="100pt" style="text-align: left; vertical-align: middle; padding: 5pt;">{{ lanc.tipo }}</td>
+                    <td width="105pt" style="text-align: right; white-space: nowrap; vertical-align: middle; padding: 5pt;">R$ {{ lanc.valor }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -108,19 +108,19 @@
         <table class="tabela-anexos" width="100%" repeat="1">
             <thead>
                 <tr>
-                    <th width="50%">Nome</th>
-                    <th width="17%">Tipo</th>
-                    <th width="17%">Data</th>
-                    <th width="16%" style="text-align: right;">Tamanho</th>
+                    <th width="240pt" style="text-align: center;">Nome</th>
+                    <th width="75pt" style="text-align: center;">Tipo</th>
+                    <th width="80pt" style="text-align: center;">Data</th>
+                    <th width="70pt" style="text-align: center;">Tamanho</th>
                 </tr>
             </thead>
             <tbody>
                 {% for anexo in anexos %}
                 <tr>
-                    <td width="50%" class="nome">{{ anexo.nome }}</td>
-                    <td width="17%">{{ anexo.tipo }}</td>
-                    <td width="17%">{{ anexo.data }}</td>
-                    <td width="16%" style="text-align: right;">{{ anexo.tamanho }}</td>
+                    <td width="240pt" style="text-align: left; vertical-align: middle; padding: 5pt;">{{ anexo.nome }}</td>
+                    <td width="75pt" style="text-align: left; vertical-align: middle; padding: 5pt;">{{ anexo.tipo }}</td>
+                    <td width="80pt" style="text-align: left; vertical-align: middle; padding: 5pt;">{{ anexo.data }}</td>
+                    <td width="70pt" style="text-align: right; vertical-align: middle; padding: 5pt;">{{ anexo.tamanho }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -143,5 +143,10 @@
             </tr>
         </table>
     </section>
+
+    <!-- RODAPÉ -->
+    <footer style="text-align: center; font-size: 8pt; color: #6B7280; margin-top: 16pt;">
+        <p>Página <pdf:pagenumber/> de <pdf:pagecount/></p>
+    </footer>
 </body>
 </html>

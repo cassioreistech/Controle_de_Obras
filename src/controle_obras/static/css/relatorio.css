@@ -5,7 +5,7 @@
 
 @page {
     size: A4;
-    margin: 1.5cm 1.5cm 2cm 1.5cm;
+    margin: 1.5cm;
 }
 
 /* ==================== BASE ==================== */
@@ -61,18 +61,18 @@ body {
     border: none;
     vertical-align: top;
     font-size: 10pt;
-    color: #4B5563;
+    color: #000000;
     width: 50%;
 }
 
 .info-obra strong {
-    color: #374151;
+    color: #000000;
 }
 
 .emissao {
     text-align: right;
     font-size: 9pt;
-    color: #9CA3AF;
+    color: #6B7280;
     margin: 8pt 0 0 0;
     font-style: italic;
 }
@@ -85,7 +85,7 @@ body {
 
 .secao h3 {
     font-size: 12pt;
-    color: #4B5563;
+    color: #000000;
     margin: 0 0 8pt 0;
     padding-bottom: 4pt;
     border-bottom: 1pt solid #E5E7EB;
@@ -149,18 +149,15 @@ tbody tr:nth-child(even) td {
 .tabela-anexos {
     width: 100%;
     font-size: 9pt;
-    -pdf-keep-in-frame-mode: shrink;
 }
 
 .tabela-anexos th,
 .tabela-anexos td {
-    padding: 6pt;
+    padding: 5pt;
     vertical-align: middle;
 }
 
-.tabela-anexos .nome {
-    font-size: 8pt;
-}
+/* ==================== RODAPÉ ==================== */
 
 .footer-table {
     width: 100%;
@@ -171,7 +168,7 @@ tbody tr:nth-child(even) td {
 
 .footer-table td {
     font-size: 8pt;
-    color: #9CA3AF;
+    color: #6B7280;
     text-align: center;
     border: none;
     padding: 4pt;
@@ -185,30 +182,4 @@ tbody tr:nth-child(even) td {
 
 .nao-quebrar {
     page-break-inside: avoid;
-}
-
-/* ==================== ASSINATURA ==================== */
-
-.assinatura {
-    margin-top: 40pt;
-    text-align: center;
-}
-
-.assinatura-texto {
-    font-size: 10pt;
-    color: #374151;
-    margin-bottom: 4pt;
-}
-
-.assinatura-nome {
-    font-size: 11pt;
-    font-weight: 700;
-    color: #374151;
-    margin: 0;
-}
-
-.assinatura-cargo {
-    font-size: 9pt;
-    color: #9CA3AF;
-    margin: 2pt 0 0 0;
 }
