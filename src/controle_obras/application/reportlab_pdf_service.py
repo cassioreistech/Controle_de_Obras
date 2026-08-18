@@ -68,8 +68,8 @@ CORES = {
 }
 
 FONTES = {
-    "tamanho_titulo": 16,
-    "tamanho_subtitulo": 13,
+    "tamanho_titulo": 20,  # Aumentado de 16pt
+    "tamanho_subtitulo": 15,  # Aumentado de 13pt
     "tamanho_secao": 12,
     "tamanho_texto": 9,
     "tamanho_tabela": 8.5,
