@@ -68,8 +68,8 @@ CORES = {
 }
 
 FONTES = {
-    "tamanho_titulo": 20,  # Aumentado de 16pt
-    "tamanho_subtitulo": 15,  # Aumentado de 13pt
+    "tamanho_titulo": 20,  # Mantido
+    "tamanho_subtitulo": 16,  # Aumentado de 15pt
     "tamanho_secao": 12,
     "tamanho_texto": 9,
     "tamanho_tabela": 8.5,
@@ -179,7 +179,7 @@ def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict:
             fontName=fonte_bold,
             fontSize=FONTES["tamanho_titulo"],
             alignment=TA_CENTER,  # Centralizado
-            spaceAfter=4,
+            spaceAfter=8,  # Aumentado de 4pt para mais espacamento
         ),
         "Subtitulo": ParagraphStyle(
             name="Subtitulo",
