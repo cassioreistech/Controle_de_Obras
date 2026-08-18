@@ -1918,3 +1918,7 @@ Supported signatures:
 2026-08-18 13:20:05,397 - INFO - controle_obras.main - QApplication criado
 2026-08-18 13:20:05,771 - INFO - controle_obras.main - AppContainer criado
 2026-08-18 13:20:06,319 - INFO - controle_obras.main - Janela exibida
+2026-08-18 13:21:57,799 - INFO - controle_obras.main - Iniciando aplicacao Controle de Obras
+2026-08-18 13:21:57,847 - INFO - controle_obras.main - QApplication criado
+2026-08-18 13:21:58,279 - INFO - controle_obras.main - AppContainer criado
+2026-08-18 13:21:59,488 - INFO - controle_obras.main - Janela exibida
