@@ -53,20 +53,20 @@
     {% if aditivos %}
     <section class="secao">
         <h3>ADITIVOS</h3>
-        <table class="tabela-dados">
+        <table width="100%" repeat="1">
             <thead>
                 <tr>
-                    <th class="col-data">Data</th>
-                    <th class="col-desc">Descrição</th>
-                    <th class="col-valor">Valor</th>
+                    <th width="14%">Data</th>
+                    <th width="72%">Descrição</th>
+                    <th width="14%">Valor</th>
                 </tr>
             </thead>
             <tbody>
                 {% for aditivo in aditivos %}
                 <tr>
-                    <td>{{ aditivo.data }}</td>
-                    <td>{{ aditivo.descricao }}</td>
-                    <td class="direita">R$ {{ aditivo.valor }}</td>
+                    <td width="14%">{{ aditivo.data }}</td>
+                    <td width="72%">{{ aditivo.descricao }}</td>
+                    <td width="14%" class="direita">R$ {{ aditivo.valor }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -78,24 +78,24 @@
     {% if lancamentos %}
     <section class="secao">
         <h3>LANÇAMENTOS</h3>
-        <table class="tabela-dados">
+        <table width="100%" repeat="1" class="tabela-lanc">
             <thead>
                 <tr>
-                    <th class="col-data">Data</th>
-                    <th class="col-desc-lanc">Descrição</th>
-                    <th class="col-tipo">Tipo</th>
-                    <th class="col-origem">Origem</th>
-                    <th class="col-valor">Valor</th>
+                    <th width="14%">Data</th>
+                    <th width="38%">Descrição</th>
+                    <th width="16%">Tipo</th>
+                    <th width="18%">Origem</th>
+                    <th width="14%">Valor</th>
                 </tr>
             </thead>
             <tbody>
                 {% for lanc in lancamentos %}
                 <tr>
-                    <td>{{ lanc.data }}</td>
-                    <td>{{ lanc.descricao }}</td>
-                    <td>{{ lanc.tipo }}</td>
-                    <td>{{ lanc.origem }}</td>
-                    <td class="direita">R$ {{ lanc.valor }}</td>
+                    <td width="14%">{{ lanc.data }}</td>
+                    <td width="38%">{{ lanc.descricao }}</td>
+                    <td width="16%">{{ lanc.tipo }}</td>
+                    <td width="18%">{{ lanc.origem }}</td>
+                    <td width="14%" class="direita">R$ {{ lanc.valor }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -107,22 +107,22 @@
     {% if anexos %}
     <section class="secao">
         <h3>ANEXOS</h3>
-        <table class="tabela-dados">
+        <table width="100%" repeat="1" class="tabela-anexos">
             <thead>
                 <tr>
-                    <th class="col-nome">Nome</th>
-                    <th class="col-tipo-anexo">Tipo</th>
-                    <th class="col-data">Data</th>
-                    <th class="col-tam">Tamanho</th>
+                    <th width="48%">Nome</th>
+                    <th width="18%">Tipo</th>
+                    <th width="19%">Data</th>
+                    <th width="15%">Tamanho</th>
                 </tr>
             </thead>
             <tbody>
                 {% for anexo in anexos %}
                 <tr>
-                    <td class="nome-anexo">{{ anexo.nome }}</td>
-                    <td>{{ anexo.tipo }}</td>
-                    <td>{{ anexo.data }}</td>
-                    <td class="direita">{{ anexo.tamanho }}</td>
+                    <td width="48%">{{ anexo.nome }}</td>
+                    <td width="18%">{{ anexo.tipo }}</td>
+                    <td width="19%">{{ anexo.data }}</td>
+                    <td width="15%" class="direita">{{ anexo.tamanho }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

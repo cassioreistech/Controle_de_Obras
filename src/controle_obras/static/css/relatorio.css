@@ -101,14 +101,14 @@ table {
 thead th {
     background-color: #1B2A4A;
     color: white;
-    padding: 7pt 8pt;
+    padding: 5pt 4pt;
     text-align: left;
     font-weight: 600;
     font-size: 9pt;
 }
 
 tbody td {
-    padding: 6pt 8pt;
+    padding: 4pt;
     border-bottom: 1pt solid #E2E8F0;
     vertical-align: top;
 }
@@ -141,44 +141,26 @@ tbody tr:nth-child(even) td {
     background-color: #F8FAFC;
 }
 
-/* ==================== COLUNAS TABELA DADOS ==================== */
+/* ==================== LANÇAMENTOS ==================== */
 
-.col-data {
-    width: 12%;
+.tabela-lanc th,
+.tabela-lanc td {
+    font-size: 8pt;
 }
 
-.col-desc {
-    width: 58%;
+.tabela-lanc td {
+    padding: 3pt 4pt;
 }
 
-.col-valor {
-    width: 30%;
-    text-align: right;
+/* ==================== ANEXOS ==================== */
+
+.tabela-anexos th,
+.tabela-anexos td {
+    font-size: 8pt;
 }
 
-.col-desc-lanc {
-    width: 30%;
-}
-
-.col-tipo {
-    width: 20%;
-}
-
-.col-origem {
-    width: 18%;
-}
-
-.col-nome {
-    width: 42%;
-}
-
-.col-tipo-anexo {
-    width: 18%;
-}
-
-.col-tam {
-    width: 22%;
-    text-align: right;
+.tabela-anexos td {
+    padding: 3pt 4pt;
 }
 
 /* ==================== RODAPÉ ==================== */
