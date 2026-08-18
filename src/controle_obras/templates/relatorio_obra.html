@@ -81,21 +81,19 @@
         <table width="100%" repeat="1">
             <thead>
                 <tr>
-                    <th width="13%">Data</th>
-                    <th width="38%">Descrição</th>
-                    <th width="15%">Tipo</th>
-                    <th width="20%">Origem</th>
-                    <th width="14%">Valor</th>
+                    <th width="80pt" style="text-align: center;">Data</th>
+                    <th width="285pt" style="text-align: center;">Descrição</th>
+                    <th width="100pt" style="text-align: center;">Tipo</th>
+                    <th width="105pt" style="text-align: center;">Valor</th>
                 </tr>
             </thead>
             <tbody>
                 {% for lanc in lancamentos %}
                 <tr>
-                    <td width="13%">{{ lanc.data }}</td>
-                    <td width="38%">{{ lanc.descricao }}</td>
-                    <td width="15%">{{ lanc.tipo }}</td>
-                    <td width="20%">{{ lanc.origem }}</td>
-                    <td width="14%" class="direita">R$ {{ lanc.valor }}</td>
+                    <td width="80pt" style="text-align: left; vertical-align: middle; padding: 4pt;">{{ lanc.data }}</td>
+                    <td width="285pt" style="text-align: left; vertical-align: middle; padding: 4pt;">{{ lanc.descricao }}</td>
+                    <td width="100pt" style="text-align: left; vertical-align: middle; padding: 4pt;">{{ lanc.tipo }}</td>
+                    <td width="105pt" style="text-align: right; white-space: nowrap; vertical-align: middle; padding: 4pt;">R$ {{ lanc.valor }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
