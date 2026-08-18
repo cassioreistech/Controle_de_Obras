@@ -1810,3 +1810,7 @@ Supported signatures:
 2026-08-17 22:04:01,035 - DEBUG - xhtml2pdf.tables - Col widths: [240.0, 75.0, 80.0, 70.0]
 2026-08-17 22:04:01,045 - DEBUG - xhtml2pdf.tables - None
 2026-08-17 22:04:01,045 - DEBUG - xhtml2pdf.tables - Col widths: [None]
+2026-08-18 10:52:06,119 - INFO - controle_obras.main - Iniciando aplicacao Controle de Obras
+2026-08-18 10:52:06,256 - INFO - controle_obras.main - QApplication criado
+2026-08-18 10:52:06,983 - INFO - controle_obras.main - AppContainer criado
+2026-08-18 10:52:07,568 - INFO - controle_obras.main - Janela exibida

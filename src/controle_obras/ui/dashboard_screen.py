@@ -528,9 +528,10 @@ class DashboardScreen(QWidget):
             table.setItem(row, 1, item_desc)
 
             valor_item = QTableWidgetItem(f"R$ {adit.valor:,.2f}")
-            valor_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            valor_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             font = valor_item.font()
             font.setBold(True)
+            font.setPointSize(font.pointSize() + 1)
             valor_item.setFont(font)
             valor_item.setForeground(QColor(INFO))
             table.setItem(row, 2, valor_item)

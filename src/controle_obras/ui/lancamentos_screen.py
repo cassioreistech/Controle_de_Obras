@@ -368,7 +368,7 @@ class LancamentosScreen(QWidget):
             valor_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             font = valor_item.font()
             font.setBold(True)
-            font.setPointSize(font.pointSize() + 1)
+            font.setPointSize(10)
             valor_item.setFont(font)
             valor_item.setForeground(Qt.GlobalColor.darkGreen)
             self.table.setItem(row, 4, valor_item)
