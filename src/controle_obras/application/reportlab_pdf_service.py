@@ -375,9 +375,9 @@ def _build_cabecalho(obra: Any, estilos: dict, fonte_bold: str, base: Any) -> li
     elementos.append(Spacer(1, 6))
     
     # Grid de informacoes (tabela com borda cinza clara)
-    # Labels em negrito, maiusculas e fonte 10pt
-    info_label_style = ParagraphStyle(
-        name="InfoLabel",
+    # Labels em fonte normal, valores em negrito/maiusculas/fonte 10pt
+    info_valor_style = ParagraphStyle(
+        name="InfoValor",
         parent=base["Normal"],
         fontName=fonte_bold,
         fontSize=10,
@@ -385,16 +385,16 @@ def _build_cabecalho(obra: Any, estilos: dict, fonte_bold: str, base: Any) -> li
     
     info_data = [
         [
-            Paragraph("CÓDIGO:", info_label_style),
-            Paragraph(_texto(obra.codigo), estilos["Texto"]),
-            Paragraph("CLIENTE:", info_label_style),
-            Paragraph(_texto(obra.cliente_contratante, 'Nao informado'), estilos["Texto"]),
+            Paragraph("CÓDIGO:", estilos["Texto"]),
+            Paragraph(_texto(obra.codigo).upper(), info_valor_style),
+            Paragraph("CLIENTE:", estilos["Texto"]),
+            Paragraph(_texto(obra.cliente_contratante, 'Nao informado').upper(), info_valor_style),
         ],
         [
-            Paragraph("LOCAL:", info_label_style),
-            Paragraph(_texto(obra.local_obra, 'Nao informado'), estilos["Texto"]),
-            Paragraph("ENGENHEIRO:", info_label_style),
-            Paragraph(_texto(obra.engenheiro_responsavel, 'Nao informado'), estilos["Texto"]),
+            Paragraph("LOCAL:", estilos["Texto"]),
+            Paragraph(_texto(obra.local_obra, 'Nao informado').upper(), info_valor_style),
+            Paragraph("ENGENHEIRO:", estilos["Texto"]),
+            Paragraph(_texto(obra.engenheiro_responsavel, 'Nao informado').upper(), info_valor_style),
         ],
     ]
     info_table = Table(info_data, colWidths=[LARGURA_UTIL / 4, LARGURA_UTIL / 4, LARGURA_UTIL / 4, LARGURA_UTIL / 4])
