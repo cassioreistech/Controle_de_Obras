@@ -640,6 +640,23 @@ class RelatorioPDFService:
 
         return filepath
 
+    def gerar_relatorio_obra_docx(self, obra_id: int) -> Path:
+        """Gera relatório PDF via DOCX + LibreOffice."""
+        from controle_obras.application.docx_report_service import DocxReportService
+
+        docx_service = DocxReportService(
+            obra_service=self._obra_service,
+            aditivo_service=self._aditivo_service,
+            lancamento_service=self._lancamento_service,
+            anexo_service=self._anexo_service,
+            resumo_service=self._resumo_service,
+            relatorio_repo=self._relatorio_repo,
+            storage=self._storage,
+            empresa_service=self._empresa_service,
+        )
+
+        return docx_service.gerar_relatorio_obra_docx(obra_id)
+
     def gerar_relatorio_obra_reportlab(self, obra_id: int) -> Path:
         """Gera relatório PDF usando ReportLab Platypus."""
         from controle_obras.application.reportlab_pdf_service import ReportLabPDFService as RLService
