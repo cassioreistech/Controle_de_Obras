@@ -29,6 +29,15 @@ from reportlab.platypus import (
     KeepTogether,
     HRFlowable,
 )
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+    KeepTogether,
+    HRFlowable,
+)
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen.canvas import Canvas
@@ -340,14 +349,14 @@ def _texto(valor: Any, padrao: str = "") -> str:
 # COMPONENTES DE LAYOUT
 # ============================================
 
-def _build_cabecalho(obra: Any, estilos: dict) -> list:
+def _build_cabecalho(obra: Any, estilos: dict, fonte_bold: str, base: Any) -> list:
     """Constroi cabecalho com titulo e informacoes basicas.
     
     Layout:
     - Titulo centralizado
     - Subtitulo centralizado
-    - Emissao (data) a esquerda, negrito, fonte 11pt
-    - Tabela de informacoes com borda cinza clara
+    - Emissao (data) centralizada, negrito, fonte 11pt
+    - Tabela de informacoes com labels em negrito/maiusculo/fonte 10pt
     """
     elementos = []
     
@@ -357,7 +366,7 @@ def _build_cabecalho(obra: Any, estilos: dict) -> list:
     # Subtitulo com nome da obra (centralizado)
     elementos.append(Paragraph(_texto(obra.nome, "Obra sem nome"), estilos["Subtitulo"]))
     
-    # Emissao (data) - centralizado, negrito, fonte maior
+    # Emissao (data) - centralizada, negrito, fonte maior
     elementos.append(Paragraph(
         f"Emissao: {datetime.now().strftime('%d/%m/%Y')}",
         estilos["Emissao"]
@@ -366,20 +375,30 @@ def _build_cabecalho(obra: Any, estilos: dict) -> list:
     elementos.append(Spacer(1, 6))
     
     # Grid de informacoes (tabela com borda cinza clara)
+    # Labels em negrito, maiusculas e fonte 10pt
+    info_label_style = ParagraphStyle(
+        name="InfoLabel",
+        parent=base["Normal"],
+        fontName=fonte_bold,
+        fontSize=10,
+    )
+    
     info_data = [
         [
-            f"CÓDIGO: {_texto(obra.codigo)}",
-            f"CLIENTE: {_texto(obra.cliente_contratante, 'Nao informado')}",
+            Paragraph("CÓDIGO:", info_label_style),
+            Paragraph(_texto(obra.codigo), estilos["Texto"]),
+            Paragraph("CLIENTE:", info_label_style),
+            Paragraph(_texto(obra.cliente_contratante, 'Nao informado'), estilos["Texto"]),
         ],
         [
-            f"LOCAL: {_texto(obra.local_obra, 'Nao informado')}",
-            f"ENGENHEIRO: {_texto(obra.engenheiro_responsavel, 'Nao informado')}",
+            Paragraph("LOCAL:", info_label_style),
+            Paragraph(_texto(obra.local_obra, 'Nao informado'), estilos["Texto"]),
+            Paragraph("ENGENHEIRO:", info_label_style),
+            Paragraph(_texto(obra.engenheiro_responsavel, 'Nao informado'), estilos["Texto"]),
         ],
     ]
-    info_table = Table(info_data, colWidths=[LARGURA_UTIL / 2, LARGURA_UTIL / 2])
+    info_table = Table(info_data, colWidths=[LARGURA_UTIL / 4, LARGURA_UTIL / 4, LARGURA_UTIL / 4, LARGURA_UTIL / 4])
     info_table.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), "FonteNormal"),
-        ("FONTSIZE", (0, 0), (-1, -1), FONTES["tamanho_texto"]),
         ("ALIGN", (0, 0), (-1, -1), "LEFT"),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("LEFTPADDING", (0, 0), (-1, -1), 6),
@@ -675,6 +694,7 @@ class ReportLabPDFService:
 
         # Registrar fontes e criar estilos
         fonte_normal, fonte_bold = _registrar_fontes()
+        base = getSampleStyleSheet()
         estilos = _criar_estilos(fonte_normal, fonte_bold)
 
         # Criar documento
@@ -691,7 +711,7 @@ class ReportLabPDFService:
         elementos = []
         
         # 1. Cabecalho
-        elementos.extend(_build_cabecalho(obra, estilos))
+        elementos.extend(_build_cabecalho(obra, estilos, fonte_bold, base))
         
         # 2. Resumo financeiro
         elementos.extend(_build_resumo_financeiro(resumo, estilos))
