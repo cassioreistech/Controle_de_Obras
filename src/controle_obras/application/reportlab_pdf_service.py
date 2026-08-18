@@ -280,6 +280,22 @@ def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict:
             textColor=CORES["verde_liquido"],
             alignment=TA_CENTER,
         ),
+        "TabelaValorAzulAditivos": ParagraphStyle(
+            name="TabelaValorAzulAditivos",
+            parent=base["Normal"],
+            fontName=fonte_bold,
+            fontSize=11,
+            textColor=CORES["azul_aditivos"],
+            alignment=TA_CENTER,
+        ),
+        "TabelaValorLancamentos": ParagraphStyle(
+            name="TabelaValorLancamentos",
+            parent=base["Normal"],
+            fontName=fonte_bold,
+            fontSize=10,
+            textColor=CORES["texto_escuro"],
+            alignment=TA_CENTER,
+        ),
         "AnexoNome": ParagraphStyle(
             name="AnexoNome",
             parent=base["Normal"],
@@ -478,11 +494,12 @@ def _build_tabela_padrao(
     fonte_normal: str,
     fonte_bold: str,
     alinhar_direita: list[bool] | None = None,
-    cabecalho_maiusculo: bool = False,  # Novo parametro para cabecalho em maiusculas
-    titulo_centralizado: bool = False,  # Novo parametro para titulo da secao centralizado
-    centralizar_colunas: list[bool] | None = None,  # Centralizar colunas de dados
-    coluna_negrito: list[bool] | None = None,  # Colunas em negrito
-    coluna_fonte_maior: list[bool] | None = None,  # Colunas com fonte maior
+    cabecalho_maiusculo: bool = False,
+    titulo_centralizado: bool = False,
+    centralizar_colunas: list[bool] | None = None,
+    coluna_negrito: list[bool] | None = None,
+    coluna_fonte_maior: list[bool] | None = None,
+    coluna_estilo_personalizado: list[str] | None = None,
 ) -> list:
     """Constroi tabela padrao com cabecalho colorido e linhas zebradas.
     
@@ -496,6 +513,7 @@ def _build_tabela_padrao(
         fonte_bold: Nome da fonte em negrito.
         alinhar_direita: Lista de bool indicando quais colunas alinhar a direita.
         cabecalho_maiusculo: Se True, converte nomes das colunas para maiusculas.
+        coluna_estilo_personalizado: Lista de nomes de estilos personalizados por coluna.
     """
     elementos = []
     
@@ -521,41 +539,53 @@ def _build_tabela_padrao(
     for linha in dados:
         linha_formatada = []
         for col_idx, valor in enumerate(linha):
-            # Verificar se esta coluna precisa de negrito ou fonte maior
-            eh_negrito = coluna_negrito and col_idx < len(coluna_negrito) and coluna_negrito[col_idx]
-            eh_fonte_maior = coluna_fonte_maior and col_idx < len(coluna_fonte_maior) and coluna_fonte_maior[col_idx]
+            # Verificar se ha estilo personalizado para esta coluna
+            tem_estilo_personalizado = (
+                coluna_estilo_personalizado 
+                and col_idx < len(coluna_estilo_personalizado) 
+                and coluna_estilo_personalizado[col_idx]
+            )
             
-            if eh_negrito or eh_fonte_maior:
-                # Criar estilo customizado para esta celula
-                style_name = f"TabelaCelula{col_idx}"
-                custom_style = ParagraphStyle(
-                    name=style_name,
-                    parent=estilos["TabelaTexto"],
-                    fontName=fonte_bold if eh_negrito else fonte_normal,
-                    fontSize=FONTES["tamanho_tabela"] + 1 if eh_fonte_maior else FONTES["tamanho_tabela"],
-                )
-                
-                # Alinhamento
-                if alinhar_direita and col_idx < len(alinhar_direita) and alinhar_direita[col_idx]:
-                    custom_style.alignment = TA_RIGHT
-                elif centralizar_colunas and col_idx < len(centralizar_colunas) and centralizar_colunas[col_idx]:
-                    custom_style.alignment = TA_CENTER
-                else:
-                    custom_style.alignment = TA_LEFT
-                
-                linha_formatada.append(Paragraph(valor, custom_style))
+            if tem_estilo_personalizado:
+                # Usar estilo personalizado (ex: TabelaValorAzulAditivos)
+                estilo_nome = coluna_estilo_personalizado[col_idx]
+                linha_formatada.append(Paragraph(valor, estilos[estilo_nome]))
             else:
-                # Usar estilo padrao baseado no alinhamento
-                if alinhar_direita and col_idx < len(alinhar_direita) and alinhar_direita[col_idx]:
-                    linha_formatada.append(Paragraph(valor, estilos["TabelaTextoDireita"]))
-                elif centralizar_colunas and col_idx < len(centralizar_colunas) and centralizar_colunas[col_idx]:
-                    linha_formatada.append(Paragraph(valor, ParagraphStyle(
-                        name=f"Centro{col_idx}",
+                # Verificar se esta coluna precisa de negrito ou fonte maior
+                eh_negrito = coluna_negrito and col_idx < len(coluna_negrito) and coluna_negrito[col_idx]
+                eh_fonte_maior = coluna_fonte_maior and col_idx < len(coluna_fonte_maior) and coluna_fonte_maior[col_idx]
+                
+                if eh_negrito or eh_fonte_maior:
+                    # Criar estilo customizado para esta celula
+                    style_name = f"TabelaCelula{col_idx}"
+                    custom_style = ParagraphStyle(
+                        name=style_name,
                         parent=estilos["TabelaTexto"],
-                        alignment=TA_CENTER,
-                    )))
+                        fontName=fonte_bold if eh_negrito else fonte_normal,
+                        fontSize=FONTES["tamanho_tabela"] + 1 if eh_fonte_maior else FONTES["tamanho_tabela"],
+                    )
+                    
+                    # Alinhamento
+                    if alinhar_direita and col_idx < len(alinhar_direita) and alinhar_direita[col_idx]:
+                        custom_style.alignment = TA_RIGHT
+                    elif centralizar_colunas and col_idx < len(centralizar_colunas) and centralizar_colunas[col_idx]:
+                        custom_style.alignment = TA_CENTER
+                    else:
+                        custom_style.alignment = TA_LEFT
+                    
+                    linha_formatada.append(Paragraph(valor, custom_style))
                 else:
-                    linha_formatada.append(Paragraph(valor, estilos["TabelaTexto"]))
+                    # Usar estilo padrao baseado no alinhamento
+                    if alinhar_direita and col_idx < len(alinhar_direita) and alinhar_direita[col_idx]:
+                        linha_formatada.append(Paragraph(valor, estilos["TabelaTextoDireita"]))
+                    elif centralizar_colunas and col_idx < len(centralizar_colunas) and centralizar_colunas[col_idx]:
+                        linha_formatada.append(Paragraph(valor, ParagraphStyle(
+                            name=f"Centro{col_idx}",
+                            parent=estilos["TabelaTexto"],
+                            alignment=TA_CENTER,
+                        )))
+                    else:
+                        linha_formatada.append(Paragraph(valor, estilos["TabelaTexto"]))
         
         dados_formatados.append(linha_formatada)
     
@@ -641,7 +671,7 @@ def _build_assinatura(responsavel: str, cnpj: str, estilos: dict) -> list:
     if not responsavel:
         return elementos
     
-    elementos.append(Spacer(1, 15))
+    elementos.append(Spacer(1, 20))
     
     # Linha de assinatura
     elementos.append(HRFlowable(
@@ -783,7 +813,7 @@ class ReportLabPDFService:
             aditivos_data = [
                 [
                     _formatar_data(a.data_aditivo),
-                    _texto(a.descricao, "Sem descricao"),
+                    _texto(a.descricao, "Sem descricao").upper(),
                     _formatar_moeda(a.valor),
                 ]
                 for a in aditivos
@@ -796,12 +826,10 @@ class ReportLabPDFService:
                 estilos=estilos,
                 fonte_normal=fonte_normal,
                 fonte_bold=fonte_bold,
-                alinhar_direita=[False, False, True],
-                cabecalho_maiusculo=True,  # Cabecalho em maiusculas e negrito
-                titulo_centralizado=True,  # Titulo ADITIVOS centralizado
-                centralizar_colunas=[True, True, False],  # Data e Descricao centralizadas, Valor a direita
-                coluna_negrito=[False, False, True],  # Apenas Valor em negrito
-                coluna_fonte_maior=[False, False, True],  # Apenas Valor com fonte maior
+                cabecalho_maiusculo=True,
+                titulo_centralizado=True,
+                centralizar_colunas=[True, True, False],
+                coluna_estilo_personalizado=[None, None, "TabelaValorAzulAditivos"],
             ))
 
         # 4. Lancamentos
@@ -816,24 +844,24 @@ class ReportLabPDFService:
                 lancamentos_data = [
                     [
                         _formatar_data(l.data_lancamento),
-                        _texto(l.descricao, "Sem descricao"),
+                        _texto(l.descricao, "Sem descricao").upper(),
                         _texto(l.tipo_nome, "Nao informado"),
                         _formatar_moeda(l.valor_total),
                     ]
                     for l in lancamentos_validos
                 ]
                 elementos.extend(_build_tabela_padrao(
-                    titulo="LANÇAMENTOS",
+                    titulo="LANCAMENTOS",
                     colunas=["Data", "Descricao", "Tipo", "Valor"],
                     dados=lancamentos_data,
                     larguras_colunas=[0.15, 0.40, 0.20, 0.25],
                     estilos=estilos,
                     fonte_normal=fonte_normal,
                     fonte_bold=fonte_bold,
-                    alinhar_direita=[False, False, False, True],
-                    cabecalho_maiusculo=True,  # Cabecalho em maiusculas e negrito
-                    titulo_centralizado=True,  # Titulo LANÇAMENTOS centralizado
-                    centralizar_colunas=[True, True, True, False],  # Data, Descricao, Tipo centralizados, Valor a direita
+                    cabecalho_maiusculo=True,
+                    titulo_centralizado=True,
+                    centralizar_colunas=[True, True, True, False],
+                    coluna_estilo_personalizado=[None, None, None, "TabelaValorLancamentos"],
                 ))
 
         # 5. Anexos
