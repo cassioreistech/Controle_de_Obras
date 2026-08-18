@@ -246,6 +246,23 @@ tbody tr:nth-child(even) td {
     text-align: right;
 }
 
+/* ==================== ADITIVOS ==================== */
+
+.tabela-aditivos {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.tabela-aditivos td:nth-child(2) {
+    text-align: left;
+}
+
+.tabela-aditivos td:last-child,
+.tabela-aditivos th:last-child {
+    white-space: nowrap;
+    text-align: right;
+}
+
 /* ==================== ASSINATURA ==================== */
 
 .assinatura {
