@@ -479,6 +479,10 @@ def _build_tabela_padrao(
     fonte_bold: str,
     alinhar_direita: list[bool] | None = None,
     cabecalho_maiusculo: bool = False,  # Novo parametro para cabecalho em maiusculas
+    titulo_centralizado: bool = False,  # Novo parametro para titulo da secao centralizado
+    centralizar_colunas: list[bool] | None = None,  # Centralizar colunas de dados
+    coluna_negrito: list[bool] | None = None,  # Colunas em negrito
+    coluna_fonte_maior: list[bool] | None = None,  # Colunas com fonte maior
 ) -> list:
     """Constroi tabela padrao com cabecalho colorido e linhas zebradas.
     
@@ -494,7 +498,12 @@ def _build_tabela_padrao(
         cabecalho_maiusculo: Se True, converte nomes das colunas para maiusculas.
     """
     elementos = []
-    elementos.append(Paragraph(titulo, estilos["Secao"]))
+    
+    # UsarSecaoCentralizada se titulo_centralizado for True
+    if titulo_centralizado:
+        elementos.append(Paragraph(titulo, estilos["SecaoCentralizada"]))
+    else:
+        elementos.append(Paragraph(titulo, estilos["Secao"]))
     
     if not dados:
         return elementos
@@ -507,8 +516,51 @@ def _build_tabela_padrao(
         Paragraph(col, estilos["TabelaCabecalho"]) for col in colunas_formatadas
     ]
     
+    # Converter dados para Paragraphs se necessario aplicar negrito ou fonte maior
+    dados_formatados = []
+    for linha in dados:
+        linha_formatada = []
+        for col_idx, valor in enumerate(linha):
+            # Verificar se esta coluna precisa de negrito ou fonte maior
+            eh_negrito = coluna_negrito and col_idx < len(coluna_negrito) and coluna_negrito[col_idx]
+            eh_fonte_maior = coluna_fonte_maior and col_idx < len(coluna_fonte_maior) and coluna_fonte_maior[col_idx]
+            
+            if eh_negrito or eh_fonte_maior:
+                # Criar estilo customizado para esta celula
+                style_name = f"TabelaCelula{col_idx}"
+                custom_style = ParagraphStyle(
+                    name=style_name,
+                    parent=estilos["TabelaTexto"],
+                    fontName=fonte_bold if eh_negrito else fonte_normal,
+                    fontSize=FONTES["tamanho_tabela"] + 1 if eh_fonte_maior else FONTES["tamanho_tabela"],
+                )
+                
+                # Alinhamento
+                if alinhar_direita and col_idx < len(alinhar_direita) and alinhar_direita[col_idx]:
+                    custom_style.alignment = TA_RIGHT
+                elif centralizar_colunas and col_idx < len(centralizar_colunas) and centralizar_colunas[col_idx]:
+                    custom_style.alignment = TA_CENTER
+                else:
+                    custom_style.alignment = TA_LEFT
+                
+                linha_formatada.append(Paragraph(valor, custom_style))
+            else:
+                # Usar estilo padrao baseado no alinhamento
+                if alinhar_direita and col_idx < len(alinhar_direita) and alinhar_direita[col_idx]:
+                    linha_formatada.append(Paragraph(valor, estilos["TabelaTextoDireita"]))
+                elif centralizar_colunas and col_idx < len(centralizar_colunas) and centralizar_colunas[col_idx]:
+                    linha_formatada.append(Paragraph(valor, ParagraphStyle(
+                        name=f"Centro{col_idx}",
+                        parent=estilos["TabelaTexto"],
+                        alignment=TA_CENTER,
+                    )))
+                else:
+                    linha_formatada.append(Paragraph(valor, estilos["TabelaTexto"]))
+        
+        dados_formatados.append(linha_formatada)
+    
     # Monteiro tabela com cabecalho + dados
-    tabelaDados = [cabecalho_completo] + dados
+    tabelaDados = [cabecalho_completo] + dados_formatados
     num_cols = len(colunas)
     
     # Converter larguras relativas para absolutas se necessario
@@ -519,32 +571,26 @@ def _build_tabela_padrao(
     
     table = Table(tabelaDados, colWidths=larguras, repeatRows=1)
     
-    # Construir estilo basico
+    # Construir estilo basico (apenas formatacao geral, sem FONTNAME ou ALIGN que agora sao por celula)
     style_commands = [
         ("BACKGROUND", (0, 0), (-1, 0), CORES["primaria"]),
         ("TEXTCOLOR", (0, 0), (-1, 0), CORES["branco"]),
         ("FONTNAME", (0, 0), (-1, 0), fonte_bold),
-        ("FONTNAME", (0, 1), (-1, -1), fonte_normal),
         ("FONTSIZE", (0, 0), (-1, -1), FONTES["tamanho_tabela"]),
         ("GRID", (0, 0), (-1, -1), 0.5, CORES["borda"]),
         ("PADDING", (0, 0), (-1, -1), 4),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),  # Alterado para MIDDLE para centralizar verticalmente
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("LEFTPADDING", (0, 0), (-1, -1), 5),
         ("RIGHTPADDING", (0, 0), (-1, -1), 5),
         ("ALIGN", (0, 0), (-1, 0), "CENTER"),  # Cabecalho centralizado
     ]
     
     # Linhas zebradas
-    for i in range(len(dados)):
-        if (i + 1) % 2 == 0:  # Linhas pares (0-indexed dados, mas 1-indexed na tabela completa)
+    for i in range(len(dados_formatados)):
+        if (i + 1) % 2 == 0:  # Linhas pares
             style_commands.append(("BACKGROUND", (0, i + 1), (-1, i + 1), CORES["fundo_claro"]))
     
-    # Alinhamento por coluna
-    for col_idx in range(num_cols):
-        if alinhar_direita and col_idx < len(alinhar_direita) and alinhar_direita[col_idx]:
-            style_commands.append(("ALIGN", (col_idx, 0), (col_idx, -1), "RIGHT"))
-        else:
-            style_commands.append(("ALIGN", (col_idx, 0), (col_idx, -1), "LEFT"))
+    # Nao precisa mais de ALIGN por coluna pois ja foi aplicado nos Paragraphs
     
     table.setStyle(TableStyle(style_commands))
     elementos.append(table)
@@ -752,6 +798,10 @@ class ReportLabPDFService:
                 fonte_bold=fonte_bold,
                 alinhar_direita=[False, False, True],
                 cabecalho_maiusculo=True,  # Cabecalho em maiusculas e negrito
+                titulo_centralizado=True,  # Titulo ADITIVOS centralizado
+                centralizar_colunas=[True, True, False],  # Data e Descricao centralizadas, Valor a direita
+                coluna_negrito=[False, False, True],  # Apenas Valor em negrito
+                coluna_fonte_maior=[False, False, True],  # Apenas Valor com fonte maior
             ))
 
         # 4. Lancamentos
@@ -773,7 +823,7 @@ class ReportLabPDFService:
                     for l in lancamentos_validos
                 ]
                 elementos.extend(_build_tabela_padrao(
-                    titulo="LANCAMENTOS",
+                    titulo="LANÇAMENTOS",
                     colunas=["Data", "Descricao", "Tipo", "Valor"],
                     dados=lancamentos_data,
                     larguras_colunas=[0.15, 0.40, 0.20, 0.25],
@@ -782,6 +832,8 @@ class ReportLabPDFService:
                     fonte_bold=fonte_bold,
                     alinhar_direita=[False, False, False, True],
                     cabecalho_maiusculo=True,  # Cabecalho em maiusculas e negrito
+                    titulo_centralizado=True,  # Titulo LANÇAMENTOS centralizado
+                    centralizar_colunas=[True, True, True, False],  # Data, Descricao, Tipo centralizados, Valor a direita
                 ))
 
         # 5. Anexos
