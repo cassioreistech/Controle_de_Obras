@@ -78,13 +78,19 @@
     {% if lancamentos %}
     <section class="secao">
         <h3>LANÇAMENTOS</h3>
-        <table class="tabela-dados">
+        <table class="tabela-lancamentos">
+            <colgroup>
+                <col style="width: 15%;">
+                <col style="width: 40%;">
+                <col style="width: 20%;">
+                <col style="width: 25%;">
+            </colgroup>
             <thead>
                 <tr>
-                    <th class="col-data">Data</th>
-                    <th class="col-desc-lanc">Descrição</th>
-                    <th class="col-tipo">Tipo</th>
-                    <th class="col-valor">Valor</th>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Tipo</th>
+                    <th class="direita">Valor</th>
                 </tr>
             </thead>
             <tbody>
@@ -105,19 +111,25 @@
     {% if anexos %}
     <section class="secao secao-anexos">
         <h3>ANEXOS</h3>
-        <table class="tabela-dados tabela-anexos">
+        <table class="tabela-anexos">
+            <colgroup>
+                <col style="width: 48%;">
+                <col style="width: 18%;">
+                <col style="width: 19%;">
+                <col style="width: 15%;">
+            </colgroup>
             <thead>
                 <tr>
-                    <th class="col-nome">Nome</th>
-                    <th class="col-tipo-anexo">Tipo</th>
-                    <th class="col-data">Data</th>
-                    <th class="col-tam">Tamanho</th>
+                    <th>Nome</th>
+                    <th>Tipo</th>
+                    <th>Data</th>
+                    <th class="direita">Tamanho</th>
                 </tr>
             </thead>
             <tbody>
                 {% for anexo in anexos %}
                 <tr>
-                    <td class="nome-anexo">{{ anexo.nome }}</td>
+                    <td class="nome-anexo">{{ anexo.nome_pdf | safe }}</td>
                     <td>{{ anexo.tipo }}</td>
                     <td>{{ anexo.data }}</td>
                     <td class="direita">{{ anexo.tamanho }}</td>

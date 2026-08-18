@@ -198,14 +198,67 @@ tbody tr:nth-child(even) td {
 
 /* ==================== ANEXOS ==================== */
 
+.secao-anexos {
+    break-before: page;
+    page-break-before: always;
+    break-inside: auto;
+    page-break-inside: auto;
+}
+
 .tabela-anexos {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+}
+
+.tabela-anexos th,
+.tabela-anexos td {
+    box-sizing: border-box;
+    padding: 5pt 4pt;
+    vertical-align: middle;
+}
+
+.tabela-anexos th {
+    text-align: left;
+    white-space: nowrap;
+}
+
+.tabela-anexos th:last-child,
+.tabela-anexos td:last-child {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.tabela-anexos td {
+    overflow-wrap: anywhere;
+    word-wrap: anywhere;
+    word-break: normal;
+}
+
+.tabela-anexos .nome-anexo {
+    font-size: 8pt;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+/* ==================== LANÇAMENTOS ==================== */
+
+.tabela-lancamentos {
+    width: 100%;
     table-layout: fixed;
 }
 
-.nome-anexo {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    hyphens: auto;
+.tabela-lancamentos td:nth-child(2),
+.tabela-lancamentos td:nth-child(3) {
+    overflow-wrap: anywhere;
+}
+
+.tabela-lancamentos td:last-child,
+.tabela-lancamentos th:last-child {
+    white-space: nowrap;
+    text-align: right;
 }
 
 /* ==================== ASSINATURA ==================== */

@@ -558,6 +558,26 @@ class RelatorioPDFService:
         def texto(valor, padrao=""):
             return padrao if valor is None else str(valor)
 
+        def quebrar_nome_arquivo(nome: str, tamanho: int = 28) -> str:
+            """Quebra nome longo do arquivo em múltiplas linhas."""
+            import re
+            if not nome:
+                return ""
+            partes = re.split(r"([_.\-])", str(nome))
+            linhas = []
+            linha = ""
+            for parte in partes:
+                tentativa = linha + parte
+                if len(tentativa) <= tamanho:
+                    linha = tentativa
+                else:
+                    if linha:
+                        linhas.append(linha)
+                    linha = parte
+            if linha:
+                linhas.append(linha)
+            return "<br>".join(linhas)
+
         context = {
             "obra": {
                 "codigo": texto(obra.codigo),
@@ -591,7 +611,7 @@ class RelatorioPDFService:
             ],
             "anexos": [
                 {
-                    "nome": texto(a.nome_original, "Sem nome"),
+                    "nome_pdf": quebrar_nome_arquivo(a.nome_original),
                     "tipo": texto(a.tipo_anexo, "Não informado"),
                     "data": formatar_data(a.data_documento or (a.created_at.date() if a.created_at else None)),
                     "tamanho": formatar_tamanho(a.tamanho_bytes or 0),
