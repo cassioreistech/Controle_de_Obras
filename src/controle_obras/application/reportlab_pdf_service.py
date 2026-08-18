@@ -47,9 +47,15 @@ CORES = {
     "sucesso": colors.HexColor("#16A34A"),
     "fundo_claro": colors.HexColor("#F9FAFB"),
     "borda": colors.HexColor("#E5E7EB"),
+    "borda_suave": colors.HexColor("#D1D5DB"),  # Borda cinza clara para tabelas
     "texto_escuro": colors.HexColor("#000000"),
     "texto_cinza": colors.HexColor("#6B7280"),
     "branco": colors.white,
+    # Cores para valores do resumo financeiro
+    "azul_contratado": colors.HexColor("#2563EB"),
+    "azul_aditivos": colors.HexColor("#3B82F6"),  # Azul mais claro
+    "vermelho_gasto": colors.HexColor("#DC2626"),
+    "verde_liquido": colors.HexColor("#16A34A"),
 }
 
 FONTES = {
@@ -153,7 +159,7 @@ def _registrar_fontes() -> tuple[str, str]:
     return "Helvetica", "Helvetica-Bold"
 
 
-def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict[str, ParagraphStyle]:
+def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict:
     """Cria estilos de paragrafo para o relatorio."""
     base = getSampleStyleSheet()
     
@@ -163,7 +169,7 @@ def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict[str, ParagraphSty
             parent=base["Normal"],
             fontName=fonte_bold,
             fontSize=FONTES["tamanho_titulo"],
-            alignment=TA_LEFT,
+            alignment=TA_CENTER,  # Centralizado
             spaceAfter=4,
         ),
         "Subtitulo": ParagraphStyle(
@@ -171,15 +177,34 @@ def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict[str, ParagraphSty
             parent=base["Normal"],
             fontName=fonte_bold,
             fontSize=FONTES["tamanho_subtitulo"],
-            alignment=TA_LEFT,
-            spaceAfter=10,
+            alignment=TA_CENTER,  # Centralizado
+            spaceAfter=6,  # Reduzido para aproximar da emissao
             textColor=CORES["primaria"],
+        ),
+        "Emissao": ParagraphStyle(
+            name="Emissao",
+            parent=base["Normal"],
+            fontName=fonte_bold,  # Negrito
+            fontSize=11,  # Aumentado de 9pt
+            alignment=TA_LEFT,  # Esquerda
+            spaceAfter=8,
+            spaceBefore=4,
         ),
         "Secao": ParagraphStyle(
             name="Secao",
             parent=base["Normal"],
             fontName=fonte_bold,
             fontSize=FONTES["tamanho_secao"],
+            spaceBefore=ESPACAMENTO["secao_antes"],
+            spaceAfter=ESPACAMENTO["secao_depois"],
+            textColor=CORES["primaria"],
+        ),
+        "SecaoCentralizada": ParagraphStyle(
+            name="SecaoCentralizada",
+            parent=base["Normal"],
+            fontName=fonte_bold,
+            fontSize=FONTES["tamanho_secao"],
+            alignment=TA_CENTER,  # Centralizado
             spaceBefore=ESPACAMENTO["secao_antes"],
             spaceAfter=ESPACAMENTO["secao_depois"],
             textColor=CORES["primaria"],
@@ -212,6 +237,39 @@ def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict[str, ParagraphSty
             fontName=fonte_normal,
             fontSize=FONTES["tamanho_tabela"],
             alignment=TA_RIGHT,
+        ),
+        # Estilos coloridos para valores do resumo financeiro
+        "TabelaValorAzul": ParagraphStyle(
+            name="TabelaValorAzul",
+            parent=base["Normal"],
+            fontName=fonte_bold,
+            fontSize=11,
+            textColor=CORES["azul_contratado"],
+            alignment=TA_CENTER,
+        ),
+        "TabelaValorAzulClaro": ParagraphStyle(
+            name="TabelaValorAzulClaro",
+            parent=base["Normal"],
+            fontName=fonte_bold,
+            fontSize=11,
+            textColor=CORES["azul_aditivos"],
+            alignment=TA_CENTER,
+        ),
+        "TabelaValorVermelho": ParagraphStyle(
+            name="TabelaValorVermelho",
+            parent=base["Normal"],
+            fontName=fonte_bold,
+            fontSize=11,
+            textColor=CORES["vermelho_gasto"],
+            alignment=TA_CENTER,
+        ),
+        "TabelaValorVerde": ParagraphStyle(
+            name="TabelaValorVerde",
+            parent=base["Normal"],
+            fontName=fonte_bold,
+            fontSize=11,
+            textColor=CORES["verde_liquido"],
+            alignment=TA_CENTER,
         ),
         "AnexoNome": ParagraphStyle(
             name="AnexoNome",
@@ -283,25 +341,39 @@ def _texto(valor: Any, padrao: str = "") -> str:
 # ============================================
 
 def _build_cabecalho(obra: Any, estilos: dict) -> list:
-    """Constroi cabecalho com titulo e informacoes basicas."""
+    """Constroi cabecalho com titulo e informacoes basicas.
+    
+    Layout:
+    - Titulo centralizado
+    - Subtitulo centralizado
+    - Emissao (data) a esquerda, negrito, fonte 11pt
+    - Tabela de informacoes com borda cinza clara
+    """
     elementos = []
     
-    # Titulo principal
+    # Titulo principal (centralizado)
     elementos.append(Paragraph("RELATORIO DA OBRA", estilos["Titulo"]))
     
-    # Subtitulo com nome da obra
+    # Subtitulo com nome da obra (centralizado)
     elementos.append(Paragraph(_texto(obra.nome, "Obra sem nome"), estilos["Subtitulo"]))
-    elementos.append(Spacer(1, 8))
     
-    # Grid de informacoes (tabela invisivel 2x2)
+    # Emissao (data) - a esquerda, negrito, fonte maior
+    elementos.append(Paragraph(
+        f"Emissao: {datetime.now().strftime('%d/%m/%Y')}",
+        estilos["Emissao"]
+    ))
+    
+    elementos.append(Spacer(1, 6))
+    
+    # Grid de informacoes (tabela com borda cinza clara)
     info_data = [
         [
-            f"<b>Codigo:</b> {_texto(obra.codigo)}",
-            f"<b>Cliente:</b> {_texto(obra.cliente_contratante, 'Não informado')}",
+            f"CÓDIGO: {_texto(obra.codigo)}",
+            f"CLIENTE: {_texto(obra.cliente_contratante, 'Nao informado')}",
         ],
         [
-            f"<b>Local:</b> {_texto(obra.local_obra, 'Não informado')}",
-            f"<b>Engenheiro:</b> {_texto(obra.engenheiro_responsavel, 'Não informado')}",
+            f"LOCAL: {_texto(obra.local_obra, 'Nao informado')}",
+            f"ENGENHEIRO: {_texto(obra.engenheiro_responsavel, 'Nao informado')}",
         ],
     ]
     info_table = Table(info_data, colWidths=[LARGURA_UTIL / 2, LARGURA_UTIL / 2])
@@ -310,41 +382,42 @@ def _build_cabecalho(obra: Any, estilos: dict) -> list:
         ("FONTSIZE", (0, 0), (-1, -1), FONTES["tamanho_texto"]),
         ("ALIGN", (0, 0), (-1, -1), "LEFT"),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING", (0, 0), (-1, -1), 2),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        # Borda cinza clara ao redor
+        ("GRID", (0, 0), (-1, -1), 0.5, CORES["borda_suave"]),
+        ("BACKGROUND", (0, 0), (-1, -1), CORES["fundo_claro"]),
     ]))
     elementos.append(info_table)
-    
-    # Data de emissao
-    emissao_style = ParagraphStyle(
-        name="Emissao",
-        parent=estilos["Texto"],
-        alignment=TA_RIGHT,
-        textColor=CORES["texto_cinza"],
-    )
-    elementos.append(Paragraph(
-        f"Emissao: {datetime.now().strftime('%d/%m/%Y')}",
-        emissao_style
-    ))
     elementos.append(Spacer(1, 10))
     
     return elementos
 
 
 def _build_resumo_financeiro(resumo: Any, estilos: dict) -> list:
-    """Constroi tabela de resumo financeiro com destaque."""
-    elementos = []
-    elementos.append(Paragraph("RESUMO FINANCEIRO", estilos["Secao"]))
+    """Constroi tabela de resumo financeiro com destaque e cores.
     
+    Cores dos valores:
+    - Valor Contratado: Azul (#2563EB)
+    - Total Aditivos: Azul claro (#3B82F6)
+    - Total Gasto: Vermelho (#DC2626)
+    - Valor Liquido: Verde (#16A34A)
+    """
+    elementos = []
+    
+    # Titulo centralizado
+    elementos.append(Paragraph("RESUMO FINANCEIRO", estilos["SecaoCentralizada"]))
+    
+    # Tabela de resumo
     resumo_data = [
         ["Valor Contratado", "Total Aditivos", "Total Gasto", "Valor Liquido"],
         [
-            _formatar_moeda(resumo.valor_contratado),
-            _formatar_moeda(resumo.total_aditivos),
-            _formatar_moeda(resumo.total_gasto),
-            _formatar_moeda(resumo.valor_liquido),
+            Paragraph(_formatar_moeda(resumo.valor_contratado), estilos["TabelaValorAzul"]),
+            Paragraph(_formatar_moeda(resumo.total_aditivos), estilos["TabelaValorAzulClaro"]),
+            Paragraph(_formatar_moeda(resumo.total_gasto), estilos["TabelaValorVermelho"]),
+            Paragraph(_formatar_moeda(resumo.valor_liquido), estilos["TabelaValorVerde"]),
         ],
     ]
     
@@ -363,7 +436,6 @@ def _build_resumo_financeiro(resumo: Any, estilos: dict) -> list:
         ("GRID", (0, 0), (-1, -1), 0.5, CORES["borda"]),
         # Linha de valores com fundo e destaque
         ("BACKGROUND", (0, 1), (-1, 1), CORES["fundo_claro"]),
-        ("FONTNAME", (0, 1), (-1, 1), "FonteBold"),
         ("FONTSIZE", (0, 1), (-1, 1), 11),
         ("HEIGHT", (0, 1), (-1, 1), 30),
     ]))
