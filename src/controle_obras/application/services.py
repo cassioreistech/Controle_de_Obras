@@ -643,9 +643,6 @@ class RelatorioPDFService:
     def gerar_relatorio_obra_reportlab(self, obra_id: int) -> Path:
         """Gera relatório PDF usando ReportLab Platypus."""
         from controle_obras.application.reportlab_pdf_service import ReportLabPDFService as RLService
-        from controle_obras.infrastructure.repositories import TipoLancamentoRepository
-
-        tipo_service = TipoLancamentoService(TipoLancamentoRepository(self._obra_service._repo._db))
 
         rl_service = RLService(
             obra_service=self._obra_service,
@@ -656,7 +653,6 @@ class RelatorioPDFService:
             relatorio_repo=self._relatorio_repo,
             storage=self._storage,
             empresa_service=self._empresa_service,
-            tipo_lancamento_service=tipo_service,
         )
 
         return rl_service.gerar_relatorio_obra_reportlab(obra_id)

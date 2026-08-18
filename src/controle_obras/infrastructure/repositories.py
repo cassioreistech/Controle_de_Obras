@@ -304,13 +304,27 @@ class LancamentoRepository(BaseRepository[Lancamento]):
 
     def list_by_obra(self, obra_id: int) -> list[Lancamento]:
         rows = self._db.execute(
-            "SELECT * FROM lancamentos WHERE obra_id=? ORDER BY data_lancamento DESC",
+            """
+            SELECT l.*, t.nome AS tipo_nome
+            FROM lancamentos l
+            LEFT JOIN tipos_lancamento t ON t.id = l.tipo_lancamento_id
+            WHERE l.obra_id=?
+            ORDER BY l.data_lancamento DESC
+            """,
             (obra_id,),
         ).fetchall()
         return [self._row_to_lancamento(row) for row in rows]
 
     def get_by_id(self, lancamento_id: int) -> Lancamento | None:
-        row = self._db.execute("SELECT * FROM lancamentos WHERE id=?", (lancamento_id,)).fetchone()
+        row = self._db.execute(
+            """
+            SELECT l.*, t.nome AS tipo_nome
+            FROM lancamentos l
+            LEFT JOIN tipos_lancamento t ON t.id = l.tipo_lancamento_id
+            WHERE l.id=?
+            """,
+            (lancamento_id,),
+        ).fetchone()
         if not row:
             return None
         return self._row_to_lancamento(row)
@@ -324,6 +338,7 @@ class LancamentoRepository(BaseRepository[Lancamento]):
             id=row["id"],
             obra_id=row["obra_id"],
             tipo_lancamento_id=row["tipo_lancamento_id"],
+            tipo_nome=row["tipo_nome"] or "",
             data_lancamento=_to_date(row["data_lancamento"]) or date.today(),
             descricao=row["descricao"],
             complemento=row["complemento"] or "",

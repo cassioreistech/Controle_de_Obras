@@ -1,5 +1,6 @@
 """Gerador de relatório PDF usando ReportLab Platypus."""
 
+import logging
 import os
 from datetime import datetime
 from decimal import Decimal
@@ -23,6 +24,9 @@ from reportlab.platypus import (
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen.canvas import Canvas
+
+
+logger = logging.getLogger(__name__)
 
 
 class NumberedCanvas(Canvas):
@@ -225,16 +229,6 @@ def _texto(valor: Any, padrao: str = "") -> str:
     return padrao if valor is None else str(valor)
 
 
-def _obter_nome_tipo(tipo_id: int | None, tipos: list) -> str:
-    """Obtém nome do tipo de lançamento."""
-    if tipo_id is None:
-        return ""
-    for t in tipos:
-        if hasattr(t, 'id') and t.id == tipo_id:
-            return _texto(t.nome)
-    return ""
-
-
 class ReportLabPDFService:
     """Serviço de geração de relatórios PDF usando ReportLab Platypus."""
 
@@ -248,7 +242,6 @@ class ReportLabPDFService:
         relatorio_repo: Any,
         storage: Any,
         empresa_service: Any | None = None,
-        tipo_lancamento_service: Any | None = None,
     ) -> None:
         self._obra_service = obra_service
         self._aditivo_service = aditivo_service
@@ -258,7 +251,6 @@ class ReportLabPDFService:
         self._relatorio_repo = relatorio_repo
         self._storage = storage
         self._empresa_service = empresa_service
-        self._tipo_lancamento_service = tipo_lancamento_service
 
     def _obter_responsavel(self) -> str:
         """Obtém o nome do responsável da empresa."""
@@ -284,15 +276,6 @@ class ReportLabPDFService:
         except Exception:
             return ""
 
-    def _obter_tipos_lancamento(self) -> list:
-        """Obtém todos os tipos de lançamento."""
-        if self._tipo_lancamento_service is None:
-            return []
-        try:
-            return self._tipo_lancamento_service.listar()
-        except Exception:
-            return []
-
     def gerar_relatorio_obra_reportlab(self, obra_id: int) -> Path:
         """Gera relatório PDF usando ReportLab Platypus.
         
@@ -317,7 +300,15 @@ class ReportLabPDFService:
         aditivos = self._aditivo_service.listar_por_obra(obra_id)
         lancamentos = self._lancamento_service.listar_por_obra(obra_id)
         anexos = self._anexo_service.listar_por_obra(obra_id)
-        tipos = self._obter_tipos_lancamento()
+
+        # Validar tipos de lançamentos
+        for lanc in lancamentos:
+            if not getattr(lanc, "tipo_nome", None) or not lanc.tipo_nome.strip():
+                logger.warning(
+                    "Lançamento %s (%s) sem tipo associado",
+                    getattr(lanc, "id", "?"),
+                    lanc.descricao
+                )
 
         # Configurar arquivo
         filename = f"relatorio_obra_{obra.codigo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_reportlab.pdf"
@@ -441,7 +432,7 @@ class ReportLabPDFService:
                 lancamentos_data.append([
                     _formatar_data(l.data_lancamento),
                     _texto(l.descricao, "Sem descrição"),
-                    _obter_nome_tipo(l.tipo_lancamento_id, tipos),
+                    _texto(l.tipo_nome, "Não informado"),
                     _formatar_moeda(l.valor_total),
                 ])
             

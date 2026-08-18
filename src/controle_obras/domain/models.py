@@ -76,6 +76,7 @@ class Lancamento:
     id: int | None = None
     obra_id: int = 0
     tipo_lancamento_id: int | None = None
+    tipo_nome: str = ""
     data_lancamento: date = field(default_factory=date.today)
     descricao: str = ""
     complemento: str = ""
