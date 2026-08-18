@@ -144,7 +144,23 @@ tbody tr:nth-child(even) td {
     background-color: #F9FAFB;
 }
 
-/* ==================== RODAPÉ ==================== */
+/* ==================== TABELA ANEXOS ==================== */
+
+.tabela-anexos {
+    width: 100%;
+    font-size: 9pt;
+    -pdf-keep-in-frame-mode: shrink;
+}
+
+.tabela-anexos th,
+.tabela-anexos td {
+    padding: 6pt;
+    vertical-align: middle;
+}
+
+.tabela-anexos .nome {
+    font-size: 8pt;
+}
 
 .footer-table {
     width: 100%;

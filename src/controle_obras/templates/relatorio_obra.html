@@ -105,22 +105,22 @@
     {% if anexos %}
     <section class="secao">
         <h3>ANEXOS</h3>
-        <table width="100%" repeat="1" style="-pdf-keep-in-frame-mode: shrink;">
+        <table class="tabela-anexos" width="100%" repeat="1">
             <thead>
                 <tr>
-                    <th width="230pt">Nome</th>
-                    <th width="75pt">Tipo</th>
-                    <th width="75pt">Data</th>
-                    <th width="65pt" style="text-align: right;">Tamanho</th>
+                    <th width="50%">Nome</th>
+                    <th width="17%">Tipo</th>
+                    <th width="17%">Data</th>
+                    <th width="16%" style="text-align: right;">Tamanho</th>
                 </tr>
             </thead>
             <tbody>
                 {% for anexo in anexos %}
                 <tr>
-                    <td width="230pt" style="vertical-align: middle; padding-left: 4pt; padding-right: 4pt;">{{ anexo.nome }}</td>
-                    <td width="75pt" style="vertical-align: middle; padding-left: 4pt; padding-right: 4pt;">{{ anexo.tipo }}</td>
-                    <td width="75pt" style="vertical-align: middle; padding-left: 4pt; padding-right: 4pt;">{{ anexo.data }}</td>
-                    <td width="65pt" style="vertical-align: middle; text-align: right; padding-left: 4pt; padding-right: 4pt;">{{ anexo.tamanho }}</td>
+                    <td width="50%" class="nome">{{ anexo.nome }}</td>
+                    <td width="17%">{{ anexo.tipo }}</td>
+                    <td width="17%">{{ anexo.data }}</td>
+                    <td width="16%" style="text-align: right;">{{ anexo.tamanho }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -133,9 +133,12 @@
         <table width="100%" style="border: none;">
             <tr>
                 <td style="border: none; text-align: center;">
-                    <p style="font-size: 10pt; color: #374151; margin-bottom: 4pt;">____________________________________</p>
-                    <p style="font-size: 11pt; font-weight: 700; color: #374151; margin: 0;">{{ responsavel }}</p>
-                    <p style="font-size: 9pt; color: #9CA3AF; margin: 2pt 0 0 0;">Responsável Legal</p>
+                    <p style="font-size: 10pt; color: #000000; margin-bottom: 4pt;">____________________________________</p>
+                    <p style="font-size: 11pt; font-weight: 700; color: #000000; margin: 0;">{{ responsavel }}</p>
+                    <p style="font-size: 9pt; color: #6B7280; margin: 2pt 0 0 0;">Responsável Legal</p>
+                    {% if cnpj %}
+                    <p style="font-size: 8pt; color: #6B7280; margin: 2pt 0 0 0;">CNPJ: {{ cnpj }}</p>
+                    {% endif %}
                 </td>
             </tr>
         </table>

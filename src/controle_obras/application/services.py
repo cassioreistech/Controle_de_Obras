@@ -348,6 +348,18 @@ class RelatorioPDFService:
         except Exception:
             return "Não informado"
 
+    def _obter_cnpj(self) -> str:
+        """Obtém o CNPJ da empresa."""
+        if self._empresa_service is None:
+            return ""
+        try:
+            empresa = self._empresa_service.obter()
+            if empresa and empresa.cnpj:
+                return empresa.cnpj
+            return ""
+        except Exception:
+            return ""
+
     def gerar_relatorio_obra(self, obra_id: int) -> Path:
         from datetime import datetime
 
@@ -437,6 +449,7 @@ class RelatorioPDFService:
                 for a in anexos
             ],
             "responsavel": self._obter_responsavel(),
+            "cnpj": self._obter_cnpj(),
             "data_emissao": datetime.now().strftime("%d/%m/%Y"),
             "css": css_content,
         }
