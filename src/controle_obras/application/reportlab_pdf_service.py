@@ -187,7 +187,7 @@ def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict:
             fontName=fonte_bold,
             fontSize=FONTES["tamanho_subtitulo"],
             alignment=TA_CENTER,  # Centralizado
-            spaceAfter=6,  # Reduzido para aproximar da emissao
+            spaceAfter=10,  # Aumentado para 10pt (espacamento entre subtitulo e emissao)
             textColor=CORES["primaria"],
         ),
         "Emissao": ParagraphStyle(
@@ -197,7 +197,7 @@ def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict:
             fontSize=11,  # Aumentado de 9pt
             alignment=TA_CENTER,  # Centralizado
             spaceAfter=8,
-            spaceBefore=4,
+            spaceBefore=4,  # Espacamento apos o subtitulo
         ),
         "Secao": ParagraphStyle(
             name="Secao",
