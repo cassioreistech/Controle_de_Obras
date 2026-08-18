@@ -179,7 +179,7 @@ def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict:
             fontName=fonte_bold,
             fontSize=FONTES["tamanho_titulo"],
             alignment=TA_CENTER,  # Centralizado
-            spaceAfter=8,  # Aumentado de 4pt para mais espacamento
+            spaceAfter=12,  # Aumentado para mais espacamento
         ),
         "Subtitulo": ParagraphStyle(
             name="Subtitulo",
