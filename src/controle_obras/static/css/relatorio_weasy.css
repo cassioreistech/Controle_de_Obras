@@ -1,0 +1,242 @@
+/* ============================================
+   CSS para Relatório PDF - Controle de Obras
+   Motor: WeasyPrint
+   ============================================ */
+
+@page {
+    size: A4;
+    margin: 1.5cm;
+    @bottom-center {
+        content: "Página " counter(page) " de " counter(pages);
+        font-size: 8pt;
+        color: #6B7280;
+    }
+}
+
+/* ==================== BASE ==================== */
+
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    color: #000000;
+    line-height: 1.4;
+}
+
+/* ==================== CABEÇALHO ==================== */
+
+.cabecalho {
+    margin-bottom: 16pt;
+    border-bottom: 2pt solid #9CA3AF;
+    padding-bottom: 10pt;
+    text-align: center;
+}
+
+.cabecalho h1 {
+    font-size: 18pt;
+    color: #000000;
+    margin: 0 0 4pt 0;
+    font-weight: 700;
+    letter-spacing: 0.5pt;
+    text-align: center;
+}
+
+.cabecalho h2 {
+    font-size: 13pt;
+    color: #000000;
+    font-weight: 600;
+    margin: 0 0 10pt 0;
+    text-align: center;
+}
+
+/* ==================== INFO OBRA ==================== */
+
+.info-obra {
+    width: 100%;
+    margin: 8pt 0;
+}
+
+.info-obra table {
+    width: 100%;
+    border-collapse: collapse;
+    border: none;
+}
+
+.info-obra td {
+    padding: 2pt 4pt;
+    border: none;
+    vertical-align: top;
+    font-size: 10pt;
+    color: #000000;
+    width: 50%;
+}
+
+.info-obra strong {
+    color: #000000;
+}
+
+.emissao {
+    text-align: right;
+    font-size: 9pt;
+    color: #6B7280;
+    margin: 8pt 0 0 0;
+    font-style: italic;
+}
+
+/* ==================== SEÇÕES ==================== */
+
+.secao {
+    margin-bottom: 16pt;
+}
+
+.secao h3 {
+    font-size: 12pt;
+    color: #000000;
+    margin: 0 0 8pt 0;
+    padding-bottom: 4pt;
+    border-bottom: 1pt solid #E5E7EB;
+    font-weight: 700;
+}
+
+.secao-anexos {
+    page-break-inside: avoid;
+}
+
+/* ==================== TABELAS ==================== */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8pt 0;
+    font-size: 9pt;
+    table-layout: fixed;
+}
+
+thead {
+    display: table-header-group;
+}
+
+thead th {
+    background-color: #6B7280;
+    color: white;
+    padding: 6pt 5pt;
+    text-align: center;
+    font-weight: 600;
+    font-size: 9pt;
+}
+
+tbody td {
+    padding: 5pt;
+    border-bottom: 1pt solid #E5E7EB;
+    vertical-align: middle;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+tbody tr:nth-child(even) td {
+    background-color: #F9FAFB;
+}
+
+.direita {
+    text-align: right;
+}
+
+/* ==================== TABELA RESUMO ==================== */
+
+.tabela-resumo {
+    margin: 10pt 0;
+}
+
+.tabela-resumo thead th {
+    text-align: center;
+    padding: 8pt;
+    font-size: 9pt;
+}
+
+.tabela-resumo tbody td {
+    text-align: center;
+    font-size: 11pt;
+    font-weight: 700;
+    padding: 12pt 8pt;
+    background-color: #F9FAFB;
+}
+
+/* ==================== COLUNAS TABELA DADOS ==================== */
+
+.col-data {
+    width: 15%;
+}
+
+.col-desc {
+    width: 55%;
+}
+
+.col-valor {
+    width: 30%;
+    text-align: right;
+}
+
+.col-desc-lanc {
+    width: 40%;
+}
+
+.col-tipo {
+    width: 20%;
+}
+
+.col-nome {
+    width: 45%;
+}
+
+.col-tipo-anexo {
+    width: 18%;
+}
+
+.col-tam {
+    width: 17%;
+    text-align: right;
+}
+
+/* ==================== ANEXOS ==================== */
+
+.tabela-anexos {
+    table-layout: fixed;
+}
+
+.nome-anexo {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* ==================== ASSINATURA ==================== */
+
+.assinatura {
+    margin-top: 30pt;
+    text-align: center;
+    page-break-inside: avoid;
+}
+
+.assinatura-linha {
+    width: 180pt;
+    border-top: 1pt solid #000000;
+    margin: 0 auto 4pt auto;
+}
+
+.assinatura-nome {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #000000;
+    margin: 0;
+}
+
+.assinatura-cargo {
+    font-size: 9pt;
+    color: #6B7280;
+    margin: 2pt 0 0 0;
+}
+
+.assinatura-cnpj {
+    font-size: 8pt;
+    color: #6B7280;
+    margin: 2pt 0 0 0;
+}
