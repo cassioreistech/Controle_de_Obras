@@ -186,7 +186,7 @@ def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict:
             parent=base["Normal"],
             fontName=fonte_bold,  # Negrito
             fontSize=11,  # Aumentado de 9pt
-            alignment=TA_LEFT,  # Esquerda
+            alignment=TA_CENTER,  # Centralizado
             spaceAfter=8,
             spaceBefore=4,
         ),
@@ -357,7 +357,7 @@ def _build_cabecalho(obra: Any, estilos: dict) -> list:
     # Subtitulo com nome da obra (centralizado)
     elementos.append(Paragraph(_texto(obra.nome, "Obra sem nome"), estilos["Subtitulo"]))
     
-    # Emissao (data) - a esquerda, negrito, fonte maior
+    # Emissao (data) - centralizado, negrito, fonte maior
     elementos.append(Paragraph(
         f"Emissao: {datetime.now().strftime('%d/%m/%Y')}",
         estilos["Emissao"]
