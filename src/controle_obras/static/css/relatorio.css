@@ -23,6 +23,7 @@ body {
     margin-bottom: 16pt;
     border-bottom: 2pt solid #1B2A4A;
     padding-bottom: 10pt;
+    text-align: center;
 }
 
 .cabecalho h1 {
@@ -31,6 +32,7 @@ body {
     margin: 0 0 4pt 0;
     font-weight: 700;
     letter-spacing: 0.5pt;
+    text-align: center;
 }
 
 .cabecalho h2 {
@@ -38,6 +40,7 @@ body {
     color: #1B2A4A;
     font-weight: 700;
     margin: 0 0 10pt 0;
+    text-align: center;
 }
 
 /* ==================== INFO OBRA ==================== */
