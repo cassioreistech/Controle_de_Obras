@@ -233,17 +233,39 @@ tbody tr:nth-child(even) td {
 .tabela-lancamentos {
     width: 100%;
     table-layout: fixed;
+    border-collapse: collapse;
 }
 
-.tabela-lancamentos td:nth-child(2),
-.tabela-lancamentos td:nth-child(3) {
+.tabela-lancamentos th,
+.tabela-lancamentos td {
+    padding: 5pt 4pt;
+    vertical-align: middle;
+}
+
+.tabela-lancamentos th {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.tabela-lancamentos td:nth-child(1) {
+    text-align: left;
+    white-space: nowrap;
+}
+
+.tabela-lancamentos td:nth-child(2) {
+    text-align: left;
     overflow-wrap: anywhere;
 }
 
-.tabela-lancamentos td:last-child,
-.tabela-lancamentos th:last-child {
+.tabela-lancamentos td:nth-child(3) {
+    text-align: left;
     white-space: nowrap;
+}
+
+.tabela-lancamentos td:nth-child(4),
+.tabela-lancamentos th:nth-child(4) {
     text-align: right;
+    white-space: nowrap;
 }
 
 /* ==================== ADITIVOS ==================== */
