@@ -93,6 +93,7 @@ class AppContainer(QMainWindow):
             self.resumo_service,
             RelatorioRepository(self.db),
             self.storage,
+            self.empresa_service,
         )
 
     def _init_ui(self) -> None:

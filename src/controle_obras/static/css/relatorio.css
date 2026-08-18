@@ -13,7 +13,7 @@
 body {
     font-family: Helvetica, Arial, sans-serif;
     font-size: 10pt;
-    color: #1E293B;
+    color: #374151;
     line-height: 1.4;
 }
 
@@ -21,14 +21,14 @@ body {
 
 .cabecalho {
     margin-bottom: 16pt;
-    border-bottom: 2pt solid #1B2A4A;
+    border-bottom: 2pt solid #9CA3AF;
     padding-bottom: 10pt;
     text-align: center;
 }
 
 .cabecalho h1 {
     font-size: 18pt;
-    color: #1B2A4A;
+    color: #374151;
     margin: 0 0 4pt 0;
     font-weight: 700;
     letter-spacing: 0.5pt;
@@ -37,8 +37,8 @@ body {
 
 .cabecalho h2 {
     font-size: 13pt;
-    color: #1B2A4A;
-    font-weight: 700;
+    color: #6B7280;
+    font-weight: 600;
     margin: 0 0 10pt 0;
     text-align: center;
 }
@@ -61,18 +61,18 @@ body {
     border: none;
     vertical-align: top;
     font-size: 10pt;
-    color: #334155;
+    color: #4B5563;
     width: 50%;
 }
 
 .info-obra strong {
-    color: #1E293B;
+    color: #374151;
 }
 
 .emissao {
     text-align: right;
     font-size: 9pt;
-    color: #64748B;
+    color: #9CA3AF;
     margin: 8pt 0 0 0;
     font-style: italic;
 }
@@ -85,10 +85,10 @@ body {
 
 .secao h3 {
     font-size: 12pt;
-    color: #1B2A4A;
+    color: #4B5563;
     margin: 0 0 8pt 0;
     padding-bottom: 4pt;
-    border-bottom: 1pt solid #E2E8F0;
+    border-bottom: 1pt solid #E5E7EB;
     font-weight: 700;
 }
 
@@ -102,7 +102,7 @@ table {
 }
 
 thead th {
-    background-color: #1B2A4A;
+    background-color: #6B7280;
     color: white;
     padding: 5pt 4pt;
     text-align: left;
@@ -112,12 +112,12 @@ thead th {
 
 tbody td {
     padding: 4pt;
-    border-bottom: 1pt solid #E2E8F0;
+    border-bottom: 1pt solid #E5E7EB;
     vertical-align: top;
 }
 
 tbody tr:nth-child(even) td {
-    background-color: #F8FAFC;
+    background-color: #F9FAFB;
 }
 
 .direita {
@@ -141,7 +141,7 @@ tbody tr:nth-child(even) td {
     font-size: 11pt;
     font-weight: 700;
     padding: 12pt 8pt;
-    background-color: #F8FAFC;
+    background-color: #F9FAFB;
 }
 
 /* ==================== LANÇAMENTOS ==================== */
@@ -170,14 +170,14 @@ tbody tr:nth-child(even) td {
 
 .footer-table {
     width: 100%;
-    border-top: 1pt solid #E2E8F0;
+    border-top: 1pt solid #E5E7EB;
     padding-top: 6pt;
     margin-top: 16pt;
 }
 
 .footer-table td {
     font-size: 8pt;
-    color: #94A3B8;
+    color: #9CA3AF;
     text-align: center;
     border: none;
     padding: 4pt;
@@ -191,4 +191,30 @@ tbody tr:nth-child(even) td {
 
 .nao-quebrar {
     page-break-inside: avoid;
+}
+
+/* ==================== ASSINATURA ==================== */
+
+.assinatura {
+    margin-top: 40pt;
+    text-align: center;
+}
+
+.assinatura-texto {
+    font-size: 10pt;
+    color: #374151;
+    margin-bottom: 4pt;
+}
+
+.assinatura-nome {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #374151;
+    margin: 0;
+}
+
+.assinatura-cargo {
+    font-size: 9pt;
+    color: #9CA3AF;
+    margin: 2pt 0 0 0;
 }

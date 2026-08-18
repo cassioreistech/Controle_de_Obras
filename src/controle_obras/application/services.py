@@ -310,6 +310,7 @@ class RelatorioPDFService:
         resumo_service: ObraResumoService,
         relatorio_repo: RelatorioRepository,
         storage: AppStorage,
+        empresa_service: "EmpresaService | None" = None,
     ) -> None:
         self._obra_service = obra_service
         self._aditivo_service = aditivo_service
@@ -318,6 +319,7 @@ class RelatorioPDFService:
         self._resumo_service = resumo_service
         self._relatorio_repo = relatorio_repo
         self._storage = storage
+        self._empresa_service = empresa_service
 
     def _obter_nome_tipo(self, tipo_lancamento_id: int | None) -> str:
         """Obtém o nome do tipo de lançamento pelo ID."""
@@ -330,6 +332,18 @@ class RelatorioPDFService:
             return tipo.nome if tipo else ""
         except Exception:
             return ""
+
+    def _obter_responsavel(self) -> str:
+        """Obtém o nome do responsável legal da empresa."""
+        if self._empresa_service is None:
+            return "Não informado"
+        try:
+            empresa = self._empresa_service.obter()
+            if empresa and empresa.responsavel:
+                return empresa.responsavel
+            return "Não informado"
+        except Exception:
+            return "Não informado"
 
     def gerar_relatorio_obra(self, obra_id: int) -> Path:
         from datetime import datetime
@@ -419,6 +433,7 @@ class RelatorioPDFService:
                 }
                 for a in anexos
             ],
+            "responsavel": self._obter_responsavel(),
             "data_emissao": datetime.now().strftime("%d/%m/%Y"),
             "css": css_content,
         }
