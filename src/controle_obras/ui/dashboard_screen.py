@@ -521,10 +521,16 @@ class DashboardScreen(QWidget):
             data_str = adit.data_aditivo.strftime("%d/%m/%Y") if adit.data_aditivo else ""
             item_data = QTableWidgetItem(data_str)
             item_data.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_data = item_data.font()
+            font_data.setBold(True)
+            item_data.setFont(font_data)
             table.setItem(row, 0, item_data)
 
             item_desc = QTableWidgetItem(adit.descricao or "Aditivo")
-            item_desc.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            item_desc.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_desc = item_desc.font()
+            font_desc.setBold(True)
+            item_desc.setFont(font_desc)
             table.setItem(row, 1, item_desc)
 
             valor_item = QTableWidgetItem(f"R$ {adit.valor:,.2f}")
@@ -537,7 +543,10 @@ class DashboardScreen(QWidget):
             table.setItem(row, 2, valor_item)
 
             item_obs = QTableWidgetItem(adit.observacoes or "")
-            item_obs.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            item_obs.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_obs = item_obs.font()
+            font_obs.setBold(True)
+            item_obs.setFont(font_obs)
             table.setItem(row, 3, item_obs)
 
             btn_excluir = QPushButton("🗑️")

@@ -344,6 +344,9 @@ class LancamentosScreen(QWidget):
             data_str = lanc.data_lancamento.strftime("%d/%m/%Y") if lanc.data_lancamento else ""
             item_data = QTableWidgetItem(data_str)
             item_data.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_data = item_data.font()
+            font_data.setBold(True)
+            item_data.setFont(font_data)
             self.table.setItem(row, 0, item_data)
 
             item_desc = QTableWidgetItem(lanc.descricao.upper())
@@ -358,10 +361,16 @@ class LancamentosScreen(QWidget):
             ) if lanc.tipo_lancamento_id else ""
             item_tipo = QTableWidgetItem(tipo_nome)
             item_tipo.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_tipo = item_tipo.font()
+            font_tipo.setBold(True)
+            item_tipo.setFont(font_tipo)
             self.table.setItem(row, 2, item_tipo)
 
             item_origem = QTableWidgetItem(lanc.origem_informacao)
             item_origem.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            font_origem = item_origem.font()
+            font_origem.setBold(True)
+            item_origem.setFont(font_origem)
             self.table.setItem(row, 3, item_origem)
 
             valor_item = QTableWidgetItem(f"R$ {lanc.valor_total:,.2f}")
