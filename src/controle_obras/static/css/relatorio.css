@@ -104,16 +104,16 @@ table {
 thead th {
     background-color: #6B7280;
     color: white;
-    padding: 5pt 4pt;
+    padding: 5pt 3pt;
     text-align: left;
     font-weight: 600;
     font-size: 9pt;
 }
 
 tbody td {
-    padding: 4pt;
+    padding: 4pt 3pt;
     border-bottom: 1pt solid #E5E7EB;
-    vertical-align: top;
+    vertical-align: middle;
 }
 
 tbody tr:nth-child(even) td {
@@ -142,28 +142,6 @@ tbody tr:nth-child(even) td {
     font-weight: 700;
     padding: 12pt 8pt;
     background-color: #F9FAFB;
-}
-
-/* ==================== LANÇAMENTOS ==================== */
-
-.tabela-lanc th,
-.tabela-lanc td {
-    font-size: 8pt;
-}
-
-.tabela-lanc td {
-    padding: 3pt 4pt;
-}
-
-/* ==================== ANEXOS ==================== */
-
-.tabela-anexos th,
-.tabela-anexos td {
-    font-size: 8pt;
-}
-
-.tabela-anexos td {
-    padding: 3pt 4pt;
 }
 
 /* ==================== RODAPÉ ==================== */

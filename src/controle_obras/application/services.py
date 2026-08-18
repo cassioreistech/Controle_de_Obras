@@ -328,8 +328,11 @@ class RelatorioPDFService:
         try:
             from controle_obras.infrastructure.repositories import TipoLancamentoRepository
             repo = TipoLancamentoRepository(self._lancamento_service._repo._db)
-            tipo = repo.get_by_id(tipo_lancamento_id)
-            return tipo.nome if tipo else ""
+            tipos = repo.list_all()
+            for tipo in tipos:
+                if tipo.id == tipo_lancamento_id:
+                    return tipo.nome
+            return ""
         except Exception:
             return ""
 

@@ -78,23 +78,23 @@
     {% if lancamentos %}
     <section class="secao">
         <h3>LANÇAMENTOS</h3>
-        <table width="100%" repeat="1" class="tabela-lanc">
+        <table width="100%" repeat="1">
             <thead>
                 <tr>
-                    <th width="14%">Data</th>
+                    <th width="13%">Data</th>
                     <th width="38%">Descrição</th>
-                    <th width="16%">Tipo</th>
-                    <th width="18%">Origem</th>
+                    <th width="15%">Tipo</th>
+                    <th width="20%">Origem</th>
                     <th width="14%">Valor</th>
                 </tr>
             </thead>
             <tbody>
                 {% for lanc in lancamentos %}
                 <tr>
-                    <td width="14%">{{ lanc.data }}</td>
+                    <td width="13%">{{ lanc.data }}</td>
                     <td width="38%">{{ lanc.descricao }}</td>
-                    <td width="16%">{{ lanc.tipo }}</td>
-                    <td width="18%">{{ lanc.origem }}</td>
+                    <td width="15%">{{ lanc.tipo }}</td>
+                    <td width="20%">{{ lanc.origem }}</td>
                     <td width="14%" class="direita">R$ {{ lanc.valor }}</td>
                 </tr>
                 {% endfor %}
@@ -107,7 +107,7 @@
     {% if anexos %}
     <section class="secao">
         <h3>ANEXOS</h3>
-        <table width="100%" repeat="1" class="tabela-anexos">
+        <table width="100%" repeat="1">
             <thead>
                 <tr>
                     <th width="48%">Nome</th>
