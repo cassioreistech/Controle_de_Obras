@@ -119,10 +119,10 @@
             <tbody>
                 {% for anexo in anexos %}
                 <tr>
-                    <td width="230pt" style="font-size: 8pt; vertical-align: middle; padding-left: 4pt; padding-right: 4pt;">{{ anexo.nome }}</td>
-                    <td width="75pt" style="font-size: 8pt; vertical-align: middle; padding-left: 4pt; padding-right: 4pt;">{{ anexo.tipo }}</td>
-                    <td width="75pt" style="font-size: 8pt; vertical-align: middle; padding-left: 4pt; padding-right: 4pt;">{{ anexo.data }}</td>
-                    <td width="65pt" style="font-size: 8pt; vertical-align: middle; text-align: right; padding-left: 4pt; padding-right: 4pt;">{{ anexo.tamanho }}</td>
+                    <td width="230pt" style="vertical-align: middle; padding-left: 4pt; padding-right: 4pt;">{{ anexo.nome }}</td>
+                    <td width="75pt" style="vertical-align: middle; padding-left: 4pt; padding-right: 4pt;">{{ anexo.tipo }}</td>
+                    <td width="75pt" style="vertical-align: middle; padding-left: 4pt; padding-right: 4pt;">{{ anexo.data }}</td>
+                    <td width="65pt" style="vertical-align: middle; text-align: right; padding-left: 4pt; padding-right: 4pt;">{{ anexo.tamanho }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

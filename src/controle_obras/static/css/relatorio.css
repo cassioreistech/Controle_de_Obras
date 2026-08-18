@@ -13,7 +13,7 @@
 body {
     font-family: Helvetica, Arial, sans-serif;
     font-size: 10pt;
-    color: #374151;
+    color: #000000;
     line-height: 1.4;
 }
 
@@ -28,7 +28,7 @@ body {
 
 .cabecalho h1 {
     font-size: 18pt;
-    color: #374151;
+    color: #000000;
     margin: 0 0 4pt 0;
     font-weight: 700;
     letter-spacing: 0.5pt;
@@ -37,7 +37,7 @@ body {
 
 .cabecalho h2 {
     font-size: 13pt;
-    color: #6B7280;
+    color: #000000;
     font-weight: 600;
     margin: 0 0 10pt 0;
     text-align: center;
@@ -105,7 +105,7 @@ thead th {
     background-color: #6B7280;
     color: white;
     padding: 5pt 3pt;
-    text-align: left;
+    text-align: center;
     font-weight: 600;
     font-size: 9pt;
 }
