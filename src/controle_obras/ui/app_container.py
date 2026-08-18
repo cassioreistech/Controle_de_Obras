@@ -156,11 +156,12 @@ class AppContainer(QMainWindow):
 
         lbl_obra = QLabel("OBRA:")
         lbl_obra.setStyleSheet(f"""
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: bold;
             padding: 0;
-            color: {SURFACE};
-            letter-spacing: 0.5px;
+            color: #FFFFFF;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         """)
         lbl_obra.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         center_layout.addWidget(lbl_obra)
@@ -218,7 +219,8 @@ class AppContainer(QMainWindow):
         self.combo_obras.clear()
         obras = self.obra_service.listar()
         for obra in obras:
-            self.combo_obras.addItem(f"{obra.codigo} - {obra.nome}", obra.id)
+            texto = f"{obra.codigo} - {obra.nome}".upper()
+            self.combo_obras.addItem(texto, obra.id)
         self.combo_obras.blockSignals(False)
 
     def _obra_selecionada(self, index: int) -> None:

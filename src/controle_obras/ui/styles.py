@@ -140,7 +140,8 @@ def get_combo_header_style():
             selection-color: #1F2937;
             selection-background-color: #DCEBFA;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: bold;
+            text-transform: uppercase;
             min-width: 250px;
         }
         QComboBox:hover {
@@ -153,25 +154,21 @@ def get_combo_header_style():
         QComboBox QAbstractItemView {
             color: #1F2937;
             background-color: #FFFFFF;
-            border: 1px solid #E2E8F0;
-            border-radius: 6px;
-            selection-color: #FFFFFF;
-            selection-background-color: #2563A6;
-            outline: none;
+            selection-color: #1F2937;
+            selection-background-color: #DCEBFA;
+            font-weight: bold;
+            text-transform: uppercase;
         }
         QComboBox QAbstractItemView::item {
-            color: #1F2937;
-            background-color: #FFFFFF;
-            min-height: 30px;
-            padding: 6px 8px;
+            min-height: 40px;
+            padding: 6px 10px;
         }
         QComboBox QAbstractItemView::item:hover {
-            color: #1F2937;
-            background-color: #DCEBFA;
+            background-color: #F1F5F9;
         }
-        QComboBox QAbstractItemView::item:selected {
-            color: #FFFFFF;
-            background-color: #2563A6;
+        QComboBox::down-arrow {
+            width: 12px;
+            height: 12px;
         }
     """
 
