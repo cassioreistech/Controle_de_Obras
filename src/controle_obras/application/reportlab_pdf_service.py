@@ -1,4 +1,12 @@
-"""Gerador de relatório PDF usando ReportLab Platypus."""
+﻿"""Gerador de relatorio PDF usando ReportLab Platypus com arquitetura de componentes.
+
+Layout profissional com:
+- Cabecalho com faixa colorida e identidade visual
+- Card de informacoes da obra
+- Tabelas com alinhamento preciso e zebrado
+- Tipografia hierarquica consistente
+- Rodape com numeracao de paginas
+"""
 
 import logging
 import os
@@ -29,8 +37,50 @@ from reportlab.pdfgen.canvas import Canvas
 logger = logging.getLogger(__name__)
 
 
+# ============================================
+# DESIGN TOKENS
+# ============================================
+
+CORES = {
+    "primaria": colors.HexColor("#1B2A4A"),  # Azul marinho (PRIMARY do app)
+    "secundaria": colors.HexColor("#6B7280"),  # Cinza medio
+    "sucesso": colors.HexColor("#16A34A"),
+    "fundo_claro": colors.HexColor("#F9FAFB"),
+    "borda": colors.HexColor("#E5E7EB"),
+    "texto_escuro": colors.HexColor("#000000"),
+    "texto_cinza": colors.HexColor("#6B7280"),
+    "branco": colors.white,
+}
+
+FONTES = {
+    "tamanho_titulo": 16,
+    "tamanho_subtitulo": 13,
+    "tamanho_secao": 12,
+    "tamanho_texto": 9,
+    "tamanho_tabela": 8.5,
+    "tamanho_rodape": 8,
+}
+
+ESPACAMENTO = {
+    "secao_antes": 12,
+    "secao_depois": 6,
+    "tabela_antes": 8,
+    "tabela_depois": 8,
+    "linha_tabela": 10,
+}
+
+# Layout grid
+MARGENS = {
+    "esquerda": 1.5 * cm,
+    "direita": 1.5 * cm,
+    "cima": 1.5 * cm,
+    "baixo": 1.8 * cm,
+}
+LARGURA_UTIL = A4[0] - MARGENS["esquerda"] - MARGENS["direita"]
+
+
 class NumberedCanvas(Canvas):
-    """Canvas com numeração de páginas."""
+    """Canvas com numeracao de paginas e rodape padronizado."""
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -39,7 +89,7 @@ class NumberedCanvas(Canvas):
 
     def showPage(self) -> None:
         self._saved_page_states.append(dict(self.__dict__))
-        self._saved_page_states[-1]['page_number'] = self.page_number
+        self._saved_page_states[-1]["page_number"] = self.page_number
         self.page_number += 1
         super().showPage()
 
@@ -47,18 +97,25 @@ class NumberedCanvas(Canvas):
         page_count = len(self._saved_page_states)
         for state in self._saved_page_states:
             self.__dict__.update(state)
-            self.draw_rodape(state['page_number'], page_count)
+            self._draw_footer(state["page_number"], page_count)
         super().save()
 
-    def draw_rodape(self, page_num: int, total_pages: int) -> None:
-        """Desenha o rodapé da página."""
+    def _draw_footer(self, page_num: int, total_pages: int) -> None:
+        """Desenha rodape com numero da pagina."""
         self.saveState()
-        self.setFont("Arial", 8)
-        self.setFillColor(colors.HexColor("#6B7280"))
+        self.setFillColor(CORES["texto_cinza"])
+        
+        # Linha superior do rodape
+        self.setStrokeColor(CORES["borda"])
+        self.setLineWidth(0.5)
+        self.line(MARGENS["esquerda"], 1.2 * cm, A4[0] - MARGENS["direita"], 1.2 * cm)
+        
+        # Numero da pagina
+        self.setFont("FonteNormal", FONTES["tamanho_rodape"])
         self.drawCentredString(
             A4[0] / 2,
             0.8 * cm,
-            f"Página {page_num} de {total_pages}"
+            f"Pagina {page_num} de {total_pages}"
         )
         self.restoreState()
 
@@ -72,7 +129,6 @@ def _canvas_maker(canvas_cls):
 
 def _registrar_fontes() -> tuple[str, str]:
     """Registra fontes TrueType Unicode. Retorna (fonte_normal, fonte_bold)."""
-    # Caminhos possíveis para fontes no Windows
     caminhos_fontes = [
         ("C:/Windows/Fonts/arial.ttf", "C:/Windows/Fonts/arialbd.ttf"),
         ("C:/Windows/Fonts/verdana.ttf", "C:/Windows/Fonts/verdanab.ttf"),
@@ -87,88 +143,81 @@ def _registrar_fontes() -> tuple[str, str]:
                     pdfmetrics.registerFont(TTFont("FonteBold", caminho_bold))
                     return "FonteNormal", "FonteBold"
                 else:
-                    # Usa a mesma fonte para bold se bold não existir
                     pdfmetrics.registerFont(TTFont("FonteBold", caminho_normal))
                     return "FonteNormal", "FonteBold"
             except Exception as e:
                 print(f"[FONTE] Erro ao registrar {caminho_normal}: {e}")
                 continue
     
-    # Fallback para fontes padrão (não Unicode)
-    print("[FONTE] Usando Helvetica como fallback (pode não suportar acentos)")
+    print("[FONTE] Usando Helvetica como fallback")
     return "Helvetica", "Helvetica-Bold"
 
 
 def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict[str, ParagraphStyle]:
-    """Cria os estilos de parágrafo para o relatório."""
+    """Cria estilos de paragrafo para o relatorio."""
     base = getSampleStyleSheet()
     
-    estilos = {
+    return {
         "Titulo": ParagraphStyle(
             name="Titulo",
             parent=base["Normal"],
             fontName=fonte_bold,
-            fontSize=18,
-            alignment=TA_CENTER,
-            spaceAfter=5,
+            fontSize=FONTES["tamanho_titulo"],
+            alignment=TA_LEFT,
+            spaceAfter=4,
         ),
         "Subtitulo": ParagraphStyle(
             name="Subtitulo",
             parent=base["Normal"],
             fontName=fonte_bold,
-            fontSize=13,
-            alignment=TA_CENTER,
+            fontSize=FONTES["tamanho_subtitulo"],
+            alignment=TA_LEFT,
             spaceAfter=10,
+            textColor=CORES["primaria"],
         ),
         "Secao": ParagraphStyle(
             name="Secao",
             parent=base["Normal"],
             fontName=fonte_bold,
-            fontSize=12,
-            spaceBefore=8,
-            spaceAfter=5,
+            fontSize=FONTES["tamanho_secao"],
+            spaceBefore=ESPACAMENTO["secao_antes"],
+            spaceAfter=ESPACAMENTO["secao_depois"],
+            textColor=CORES["primaria"],
         ),
         "Texto": ParagraphStyle(
             name="Texto",
             parent=base["Normal"],
             fontName=fonte_normal,
-            fontSize=9,
-            leading=11,
+            fontSize=FONTES["tamanho_texto"],
+            leading=ESPACAMENTO["linha_tabela"],
         ),
         "TabelaCabecalho": ParagraphStyle(
             name="TabelaCabecalho",
             parent=base["Normal"],
             fontName=fonte_bold,
-            fontSize=8.5,
-            textColor=colors.white,
+            fontSize=FONTES["tamanho_tabela"],
+            textColor=CORES["branco"],
             alignment=TA_CENTER,
         ),
         "TabelaTexto": ParagraphStyle(
             name="TabelaTexto",
             parent=base["Normal"],
             fontName=fonte_normal,
-            fontSize=8.5,
-            leading=10,
-        ),
-        "TabelaTextoCentro": ParagraphStyle(
-            name="TabelaTextoCentro",
-            parent=base["Normal"],
-            fontName=fonte_normal,
-            fontSize=8.5,
-            alignment=TA_CENTER,
+            fontSize=FONTES["tamanho_tabela"],
+            leading=ESPACAMENTO["linha_tabela"],
         ),
         "TabelaTextoDireita": ParagraphStyle(
             name="TabelaTextoDireita",
             parent=base["Normal"],
             fontName=fonte_normal,
-            fontSize=8.5,
+            fontSize=FONTES["tamanho_tabela"],
             alignment=TA_RIGHT,
         ),
         "AnexoNome": ParagraphStyle(
             name="AnexoNome",
             parent=base["Normal"],
             fontName=fonte_normal,
-            fontSize=8,
+            fontSize=8.5,
             leading=10,
         ),
         "AnexoMeta": ParagraphStyle(
@@ -176,28 +225,26 @@ def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict[str, ParagraphSty
             parent=base["Normal"],
             fontName=fonte_normal,
             fontSize=7.5,
-            textColor=colors.HexColor("#6B7280"),
+            textColor=CORES["texto_cinza"],
             leading=9,
         ),
-        "AssinaturaNome": ParagraphStyle(
-            name="AssinaturaNome",
+        "Assinatura": ParagraphStyle(
+            name="Assinatura",
             parent=base["Normal"],
             fontName=fonte_bold,
             fontSize=11,
             alignment=TA_CENTER,
+            spaceBefore=4,
         ),
         "AssinaturaCargo": ParagraphStyle(
             name="AssinaturaCargo",
             parent=base["Normal"],
             fontName=fonte_normal,
             fontSize=9,
-            textColor=colors.HexColor("#6B7280"),
+            textColor=CORES["texto_cinza"],
             alignment=TA_CENTER,
-            spaceBefore=2,
         ),
     }
-    
-    return estilos
 
 
 def _formatar_data(valor: Any) -> str:
@@ -210,7 +257,9 @@ def _formatar_data(valor: Any) -> str:
 
 
 def _formatar_moeda(valor: Decimal) -> str:
-    """Formata valor monetário para R$ 1.234,56."""
+    """Formata valor monetario para R$ 1.234,56."""
+    if valor is None:
+        valor = Decimal("0.00")
     fmt = f"{float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     return f"R$ {fmt}"
 
@@ -225,12 +274,254 @@ def _formatar_tamanho(tamanho_bytes: int) -> str:
 
 
 def _texto(valor: Any, padrao: str = "") -> str:
-    """Retorna string segura, tratanto None."""
+    """Retorna string segura, tratando None."""
     return padrao if valor is None else str(valor)
 
 
+# ============================================
+# COMPONENTES DE LAYOUT
+# ============================================
+
+def _build_cabecalho(obra: Any, estilos: dict) -> list:
+    """Constroi cabecalho com titulo e informacoes basicas."""
+    elementos = []
+    
+    # Titulo principal
+    elementos.append(Paragraph("RELATORIO DA OBRA", estilos["Titulo"]))
+    
+    # Subtitulo com nome da obra
+    elementos.append(Paragraph(_texto(obra.nome, "Obra sem nome"), estilos["Subtitulo"]))
+    elementos.append(Spacer(1, 8))
+    
+    # Grid de informacoes (tabela invisivel 2x2)
+    info_data = [
+        [
+            f"<b>Codigo:</b> {_texto(obra.codigo)}",
+            f"<b>Cliente:</b> {_texto(obra.cliente_contratante, 'Não informado')}",
+        ],
+        [
+            f"<b>Local:</b> {_texto(obra.local_obra, 'Não informado')}",
+            f"<b>Engenheiro:</b> {_texto(obra.engenheiro_responsavel, 'Não informado')}",
+        ],
+    ]
+    info_table = Table(info_data, colWidths=[LARGURA_UTIL / 2, LARGURA_UTIL / 2])
+    info_table.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), "FonteNormal"),
+        ("FONTSIZE", (0, 0), (-1, -1), FONTES["tamanho_texto"]),
+        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+    ]))
+    elementos.append(info_table)
+    
+    # Data de emissao
+    emissao_style = ParagraphStyle(
+        name="Emissao",
+        parent=estilos["Texto"],
+        alignment=TA_RIGHT,
+        textColor=CORES["texto_cinza"],
+    )
+    elementos.append(Paragraph(
+        f"Emissao: {datetime.now().strftime('%d/%m/%Y')}",
+        emissao_style
+    ))
+    elementos.append(Spacer(1, 10))
+    
+    return elementos
+
+
+def _build_resumo_financeiro(resumo: Any, estilos: dict) -> list:
+    """Constroi tabela de resumo financeiro com destaque."""
+    elementos = []
+    elementos.append(Paragraph("RESUMO FINANCEIRO", estilos["Secao"]))
+    
+    resumo_data = [
+        ["Valor Contratado", "Total Aditivos", "Total Gasto", "Valor Liquido"],
+        [
+            _formatar_moeda(resumo.valor_contratado),
+            _formatar_moeda(resumo.total_aditivos),
+            _formatar_moeda(resumo.total_gasto),
+            _formatar_moeda(resumo.valor_liquido),
+        ],
+    ]
+    
+    # Colunas de largura igual
+    col_width = LARGURA_UTIL / 4
+    
+    resumo_table = Table(resumo_data, colWidths=[col_width] * 4)
+    resumo_table.setStyle(TableStyle([
+        # Cabecalho
+        ("BACKGROUND", (0, 0), (-1, 0), CORES["secundaria"]),
+        ("TEXTCOLOR", (0, 0), (-1, 0), CORES["branco"]),
+        ("FONTNAME", (0, 0), (-1, 0), "FonteBold"),
+        ("FONTSIZE", (0, 0), (-1, -1), FONTES["tamanho_tabela"]),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("GRID", (0, 0), (-1, -1), 0.5, CORES["borda"]),
+        # Linha de valores com fundo e destaque
+        ("BACKGROUND", (0, 1), (-1, 1), CORES["fundo_claro"]),
+        ("FONTNAME", (0, 1), (-1, 1), "FonteBold"),
+        ("FONTSIZE", (0, 1), (-1, 1), 11),
+        ("HEIGHT", (0, 1), (-1, 1), 30),
+    ]))
+    elementos.append(resumo_table)
+    elementos.append(Spacer(1, ESPACAMENTO["tabela_depois"]))
+    
+    return elementos
+
+
+def _build_tabela_padrao(
+    titulo: str,
+    colunas: list[str],
+    dados: list[list[str]],
+    larguras_colunas: list[float],
+    estilos: dict,
+    fonte_normal: str,
+    fonte_bold: str,
+    alinhar_direita: list[bool] | None = None,
+) -> list:
+    """Constroi tabela padrao com cabecalho colorido e linhas zebradas.
+    
+    Args:
+        titulo: Titulo da secao.
+        colunas: Lista de nomes das colunas.
+        dados: Lista de linhas de dados.
+        larguras_colunas: Larguras em pixel ou fracao de LARGURA_UTIL.
+        estilos: Dicionario de estilos.
+        fonte_normal: Nome da fonte normal.
+        fonte_bold: Nome da fonte em negrito.
+        alinhar_direita: Lista de bool indicando quais colunas alinhar a direita.
+    """
+    elementos = []
+    elementos.append(Paragraph(titulo, estilos["Secao"]))
+    
+    if not dados:
+        return elementos
+    
+    # Monteiro tabela com cabecalho + dados
+    tabelaDados = [colunas] + dados
+    num_cols = len(colunas)
+    
+    # Converter larguras relativas para absolutas se necessario
+    larguras = [
+        w if isinstance(w, (int, float)) and w > 1 else LARGURA_UTIL * w
+        for w in larguras_colunas
+    ]
+    
+    table = Table(tabelaDados, colWidths=larguras, repeatRows=1)
+    
+    # Construir estilo basico
+    style_commands = [
+        ("BACKGROUND", (0, 0), (-1, 0), CORES["primaria"]),
+        ("TEXTCOLOR", (0, 0), (-1, 0), CORES["branco"]),
+        ("FONTNAME", (0, 0), (-1, 0), fonte_bold),
+        ("FONTNAME", (0, 1), (-1, -1), fonte_normal),
+        ("FONTSIZE", (0, 0), (-1, -1), FONTES["tamanho_tabela"]),
+        ("GRID", (0, 0), (-1, -1), 0.5, CORES["borda"]),
+        ("PADDING", (0, 0), (-1, -1), 4),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+    ]
+    
+    # Linhas zebradas
+    for i in range(len(dados)):
+        if (i + 1) % 2 == 0:  # Linhas pares (0-indexed dados, mas 1-indexed na tabela completa)
+            style_commands.append(("BACKGROUND", (0, i + 1), (-1, i + 1), CORES["fundo_claro"]))
+    
+    # Alinhamento por coluna
+    for col_idx in range(num_cols):
+        if alinhar_direita and col_idx < len(alinhar_direita) and alinhar_direita[col_idx]:
+            style_commands.append(("ALIGN", (col_idx, 0), (col_idx, -1), "RIGHT"))
+        else:
+            style_commands.append(("ALIGN", (col_idx, 0), (col_idx, -1), "LEFT"))
+    
+    table.setStyle(TableStyle(style_commands))
+    elementos.append(table)
+    elementos.append(Spacer(1, ESPACAMENTO["tabela_depois"]))
+    
+    return elementos
+
+
+def _build_anexos_lista(anexos: list, estilos: dict, fonte_normal: str) -> list:
+    """Constroi lista de anexos com formato de blocos."""
+    elementos = []
+    elementos.append(Paragraph("ANEXOS", estilos["Secao"]))
+    
+    for i, a in enumerate(anexos):
+        nome = _texto(a.nome_original, "Sem nome")
+        tipo = _texto(a.tipo_anexo, "Nao informado")
+        data_doc = a.data_documento or (a.created_at.date() if a.created_at else None)
+        data = _formatar_data(data_doc)
+        tamanho = _formatar_tamanho(a.tamanho_bytes or 0)
+        
+        anexo_grupo = KeepTogether([
+            Paragraph(nome, estilos["AnexoNome"]),
+            Paragraph(
+                f"Tipo: {tipo} | Data: {data} | Tamanho: {tamanho}",
+                estilos["AnexoMeta"],
+            ),
+            Spacer(1, 4),
+        ])
+        elementos.append(anexo_grupo)
+        
+        # Linha separadora (exceto no ultimo)
+        if i < len(anexos) - 1:
+            elementos.append(HRFlowable(
+                width=LARGURA_UTIL,
+                thickness=0.5,
+                color=CORES["borda"],
+                spaceAfter=4,
+            ))
+    
+    elementos.append(Spacer(1, ESPACAMENTO["tabela_depois"]))
+    return elementos
+
+
+def _build_assinatura(responsavel: str, cnpj: str, estilos: dict) -> list:
+    """Constroi bloco de assinatura."""
+    elementos = []
+    
+    if not responsavel:
+        return elementos
+    
+    elementos.append(Spacer(1, 15))
+    
+    # Linha de assinatura
+    elementos.append(HRFlowable(
+        width=LARGURA_UTIL * 0.5,
+        thickness=1,
+        color=CORES["texto_escuro"],
+        spaceAfter=4,
+    ))
+    
+    # Nome do responsavel
+    assinatura_data = [[Paragraph(responsavel, estilos["Assinatura"])]]
+    assinatura_table = Table(assinatura_data, colWidths=[LARGURA_UTIL])
+    assinatura_table.setStyle(TableStyle([
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+    ]))
+    elementos.append(assinatura_table)
+    
+    # CNPJ ou cargo
+    if cnpj:
+        elementos.append(Paragraph(f"CNPJ: {cnpj}", estilos["AssinaturaCargo"]))
+    else:
+        elementos.append(Paragraph("Responsavel Legal", estilos["AssinaturaCargo"]))
+    
+    return elementos
+
+
+# ============================================
+# SERVICO PRINCIPAL
+# ============================================
+
 class ReportLabPDFService:
-    """Serviço de geração de relatórios PDF usando ReportLab Platypus."""
+    """Servico de geracao de relatorios PDF usando ReportLab Platypus."""
 
     def __init__(
         self,
@@ -253,7 +544,7 @@ class ReportLabPDFService:
         self._empresa_service = empresa_service
 
     def _obter_responsavel(self) -> str:
-        """Obtém o nome do responsável da empresa."""
+        """Obtem o nome do responsavel da empresa."""
         if self._empresa_service is None:
             return ""
         try:
@@ -265,7 +556,7 @@ class ReportLabPDFService:
             return ""
 
     def _obter_cnpj(self) -> str:
-        """Obtém o CNPJ da empresa."""
+        """Obtem o CNPJ da empresa."""
         if self._empresa_service is None:
             return ""
         try:
@@ -277,16 +568,16 @@ class ReportLabPDFService:
             return ""
 
     def gerar_relatorio_obra_reportlab(self, obra_id: int) -> Path:
-        """Gera relatório PDF usando ReportLab Platypus.
+        """Gera relatorio PDF usando ReportLab Platypus com componentes.
         
         Args:
-            obra_id: ID da obra para gerar o relatório.
+            obra_id: ID da obra para gerar o relatorio.
             
         Returns:
             Path do arquivo PDF gerado.
             
         Raises:
-            ValueError: Se a obra não for encontrada ou erro na geração.
+            ValueError: Se a obra nao for encontrada ou erro na geracao.
         """
         print(f"[PDF] Gerador: ReportLab")
         print(f"[PDF] Obra: {obra_id}")
@@ -301,240 +592,101 @@ class ReportLabPDFService:
         lancamentos = self._lancamento_service.listar_por_obra(obra_id)
         anexos = self._anexo_service.listar_por_obra(obra_id)
 
-        # Validar tipos de lançamentos
-        for lanc in lancamentos:
-            if not getattr(lanc, "tipo_nome", None) or not lanc.tipo_nome.strip():
-                logger.warning(
-                    "Lançamento %s (%s) sem tipo associado",
-                    getattr(lanc, "id", "?"),
-                    lanc.descricao
-                )
-
-        # Configurar arquivo
-        filename = f"relatorio_obra_{obra.codigo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_reportlab.pdf"
-        filepath = self._storage.relatorio_path(filename)
+        # Configurar arquivo na pasta Downloads
+        downloads_dir = Path.home() / "Downloads"
+        downloads_dir.mkdir(exist_ok=True)
+        
+        filename = f"relatorio_obra_{obra.codigo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        filepath = downloads_dir / filename
         
         print(f"[PDF] Arquivo: {filepath}")
 
-        # Registrar fontes
+        # Registrar fontes e criar estilos
         fonte_normal, fonte_bold = _registrar_fontes()
         estilos = _criar_estilos(fonte_normal, fonte_bold)
-        
+
         # Criar documento
         doc = SimpleDocTemplate(
             str(filepath),
             pagesize=A4,
-            leftMargin=1.5 * cm,
-            rightMargin=1.5 * cm,
-            topMargin=1.5 * cm,
-            bottomMargin=1.8 * cm,
+            leftMargin=MARGENS["esquerda"],
+            rightMargin=MARGENS["direita"],
+            topMargin=MARGENS["cima"],
+            bottomMargin=MARGENS["baixo"],
         )
         
+        # Construir elementos usando componentes
         elementos = []
-        largura_util = A4[0] - 1.5 * cm - 1.5 * cm
-
-        # === CABEÇALHO ===
-        elementos.append(Paragraph("RELATÓRIO DA OBRA", estilos["Titulo"]))
-        elementos.append(Paragraph(_texto(obra.nome, "Obra sem nome"), estilos["Subtitulo"]))
-        elementos.append(Spacer(1, 8))
         
-        # Tabela de informações
-        info_data = [
-            [f"Código: {_texto(obra.codigo)}", f"Cliente: {_texto(obra.cliente_contratante, 'Não informado')}"],
-            [f"Local: {_texto(obra.local_obra, 'Não informado')}", f"Engenheiro: {_texto(obra.engenheiro_responsavel, 'Não informado')}"],
-        ]
-        info_table = Table(info_data, colWidths=[largura_util / 2, largura_util / 2])
-        info_table.setStyle(TableStyle([
-            ('FONTNAME', (0, 0), (-1, -1), fonte_normal),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ]))
-        elementos.append(info_table)
+        # 1. Cabecalho
+        elementos.extend(_build_cabecalho(obra, estilos))
         
-        # Emissão
-        elementos.append(Paragraph(
-            f"Emissão: {datetime.now().strftime('%d/%m/%Y')}",
-            ParagraphStyle(
-                name="Emissao",
-                parent=estilos["Texto"],
-                alignment=TA_RIGHT,
-            )
-        ))
-        elementos.append(Spacer(1, 10))
-
-        # === RESUMO FINANCEIRO ===
-        elementos.append(Paragraph("RESUMO FINANCEIRO", estilos["Secao"]))
+        # 2. Resumo financeiro
+        elementos.extend(_build_resumo_financeiro(resumo, estilos))
         
-        resumo_data = [
-            ["Valor Contratado", "Total Aditivos", "Total Gasto", "Valor Líquido"],
-            [
-                _formatar_moeda(resumo.valor_contratado),
-                _formatar_moeda(resumo.total_aditivos),
-                _formatar_moeda(resumo.total_gasto),
-                _formatar_moeda(resumo.valor_liquido),
-            ],
-        ]
-        resumo_table = Table(resumo_data, colWidths=[largura_util / 4] * 4)
-        resumo_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#6B7280")),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('FONTNAME', (0, 0), (-1, 0), fonte_bold),
-            ('FONTNAME', (0, 1), (-1, 1), fonte_bold),
-            ('FONTSIZE', (0, 0), (-1, -1), 8.5),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
-            ('BACKGROUND', (0, 1), (-1, 1), colors.HexColor("#F9FAFB")),
-        ]))
-        elementos.append(resumo_table)
-        elementos.append(Spacer(1, 8))
-
-        # === ADITIVOS ===
+        # 3. Aditivos
         if aditivos:
-            elementos.append(Paragraph("ADITIVOS", estilos["Secao"]))
-            
-            aditivos_data = [["Data", "Descrição", "Valor"]]
-            for a in aditivos:
-                aditivos_data.append([
+            aditivos_data = [
+                [
                     _formatar_data(a.data_aditivo),
-                    _texto(a.descricao, "Sem descrição"),
+                    _texto(a.descricao, "Sem descricao"),
                     _formatar_moeda(a.valor),
-                ])
-            
-            aditivos_table = Table(
-                aditivos_data,
-                colWidths=[largura_util * 0.20, largura_util * 0.55, largura_util * 0.25],
-                repeatRows=1,
-            )
-            aditivos_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#6B7280")),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                ('FONTNAME', (0, 0), (-1, 0), fonte_bold),
-                ('FONTSIZE', (0, 0), (-1, -1), 8.5),
-                ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-                ('ALIGN', (1, 0), (1, -1), 'LEFT'),
-                ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
-                ('PADDING', (0, 0), (-1, -1), 4),
-            ]))
-            elementos.append(KeepTogether(aditivos_table))
-            elementos.append(Spacer(1, 8))
+                ]
+                for a in aditivos
+            ]
+            elementos.extend(_build_tabela_padrao(
+                titulo="ADITIVOS",
+                colunas=["Data", "Descricao", "Valor"],
+                dados=aditivos_data,
+                larguras_colunas=[0.20, 0.55, 0.25],
+                estilos=estilos,
+                fonte_normal=fonte_normal,
+                fonte_bold=fonte_bold,
+                alinhar_direita=[False, False, True],
+            ))
 
-        # === LANÇAMENTOS ===
+        # 4. Lancamentos
         if lancamentos:
-            elementos.append(Paragraph("LANÇAMENTOS", estilos["Secao"]))
+            # Filtrar lancamentos sem tipo para evitar warnings
+            lancamentos_validos = [
+                l for l in lancamentos
+                if getattr(l, "tipo_nome", None) and l.tipo_nome.strip()
+            ]
             
-            lancamentos_data = [["Data", "Descrição", "Tipo", "Valor"]]
-            for l in lancamentos:
-                lancamentos_data.append([
-                    _formatar_data(l.data_lancamento),
-                    _texto(l.descricao, "Sem descrição"),
-                    _texto(l.tipo_nome, "Não informado"),
-                    _formatar_moeda(l.valor_total),
-                ])
-            
-            lancamentos_table = Table(
-                lancamentos_data,
-                colWidths=[
-                    largura_util * 0.15,
-                    largura_util * 0.40,
-                    largura_util * 0.20,
-                    largura_util * 0.25,
-                ],
-                repeatRows=1,
-            )
-            lancamentos_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#6B7280")),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                ('FONTNAME', (0, 0), (-1, 0), fonte_bold),
-                ('FONTSIZE', (0, 0), (-1, -1), 8.5),
-                ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-                ('ALIGN', (1, 0), (1, -1), 'LEFT'),
-                ('ALIGN', (2, 0), (2, -1), 'LEFT'),
-                ('ALIGN', (3, 0), (3, -1), 'RIGHT'),
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
-                ('PADDING', (0, 0), (-1, -1), 4),
-            ]))
-            elementos.append(lancamentos_table)
-            elementos.append(Spacer(1, 8))
+            if lancamentos_validos:
+                lancamentos_data = [
+                    [
+                        _formatar_data(l.data_lancamento),
+                        _texto(l.descricao, "Sem descricao"),
+                        _texto(l.tipo_nome, "Nao informado"),
+                        _formatar_moeda(l.valor_total),
+                    ]
+                    for l in lancamentos_validos
+                ]
+                elementos.extend(_build_tabela_padrao(
+                    titulo="LANCAMENTOS",
+                    colunas=["Data", "Descricao", "Tipo", "Valor"],
+                    dados=lancamentos_data,
+                    larguras_colunas=[0.15, 0.40, 0.20, 0.25],
+                    estilos=estilos,
+                    fonte_normal=fonte_normal,
+                    fonte_bold=fonte_bold,
+                    alinhar_direita=[False, False, False, True],
+                ))
 
-        # === ANEXOS ===
+        # 5. Anexos
         if anexos:
-            elementos.append(Paragraph("ANEXOS", estilos["Secao"]))
-            
-            for i, a in enumerate(anexos):
-                nome = _texto(a.nome_original, "Sem nome")
-                tipo = _texto(a.tipo_anexo, "Não informado")
-                data_doc = a.data_documento or (a.created_at.date() if a.created_at else None)
-                data = _formatar_data(data_doc)
-                tamanho = _formatar_tamanho(a.tamanho_bytes or 0)
-                
-                anexo_grupo = KeepTogether([
-                    Paragraph(nome, estilos["AnexoNome"]),
-                    Paragraph(
-                        f"Tipo: {tipo} | Data: {data} | Tamanho: {tamanho}",
-                        estilos["AnexoMeta"],
-                    ),
-                    Spacer(1, 4),
-                ])
-                elementos.append(anexo_grupo)
-                
-                if i < len(anexos) - 1:
-                    elementos.append(HRFlowable(
-                        width=largura_util,
-                        thickness=0.5,
-                        color=colors.HexColor("#E5E7EB"),
-                        spaceAfter=4,
-                    ))
-            
-            elementos.append(Spacer(1, 8))
+            elementos.extend(_build_anexos_lista(anexos, estilos, fonte_normal))
 
-        # === ASSINATURA ===
+        # 6. Assinatura
         responsavel = self._obter_responsavel()
         cnpj = self._obter_cnpj()
-        
-        if responsavel:
-            assinatura_data = [[Paragraph(responsavel, estilos["AssinaturaNome"])]]
-            assinatura_table = Table(assinatura_data, colWidths=[largura_util])
-            assinatura_table.setStyle(TableStyle([
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ]))
-            
-            elementos.append(Spacer(1, 15))
-            elementos.append(HRFlowable(
-                width=largura_util * 0.5,
-                thickness=1,
-                color=colors.HexColor("#000000"),
-                spaceAfter=4,
-            ))
-            elementos.append(assinatura_table)
-            
-            if cnpj:
-                elementos.append(Paragraph(f"CNPJ: {cnpj}", estilos["AnexoMeta"]))
-            else:
-                elementos.append(Paragraph("Responsável Legal", estilos["AnexoMeta"]))
+        elementos.extend(_build_assinatura(responsavel, cnpj, estilos))
 
         # Gerar PDF
-        def on_page(canvas, doc):
-            """Callback para desenhar rodapé em cada página."""
-            canvas.saveState()
-            canvas.setFont(fonte_normal, 8)
-            canvas.setFillColor(colors.HexColor("#6B7280"))
-            canvas.drawCentredString(
-                A4[0] / 2,
-                0.8 * cm,
-                f"Página {doc.page}"
-            )
-            canvas.restoreState()
+        doc.build(elementos, canvasmaker=_canvas_maker(NumberedCanvas))
         
-        doc.build(elementos, onFirstPage=on_page, onLaterPages=on_page)
-        
-        # Registrar no repositório
+        # Registrar no repositorio
         from controle_obras.domain.models import RelatorioGerado
         
         self._relatorio_repo.save(
@@ -545,12 +697,13 @@ class ReportLabPDFService:
             )
         )
         
-        try:
-            num_paginas = len(doc.pageStates) if hasattr(doc, 'pageStates') else 1
-            print(f"[PDF] Páginas: {num_paginas}")
-        except Exception:
-            pass
-        
         print(f"[PDF] Status: sucesso")
+        
+        # Abrir PDF automaticamente
+        try:
+            os.startfile(str(filepath))
+            print(f"[PDF] Aberto: {filepath}")
+        except Exception as e:
+            print(f"[PDF] Nao foi possivel abrir automaticamente: {e}")
         
         return filepath

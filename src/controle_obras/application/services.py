@@ -299,7 +299,10 @@ class BackupApplicationService:
 
 
 class RelatorioPDFService:
-    """Serviço para geração de relatório PDF da obra."""
+    """Servico para geracao de relatorio PDF da obra.
+    
+    Motor unificado: ReportLab Platypus (sem dependencias externas).
+    """
 
     def __init__(
         self,
@@ -321,35 +324,20 @@ class RelatorioPDFService:
         self._storage = storage
         self._empresa_service = empresa_service
 
-    def _obter_nome_tipo(self, tipo_lancamento_id: int | None) -> str:
-        """Obtém o nome do tipo de lançamento pelo ID."""
-        if tipo_lancamento_id is None:
-            return ""
-        try:
-            from controle_obras.infrastructure.repositories import TipoLancamentoRepository
-            repo = TipoLancamentoRepository(self._lancamento_service._repo._db)
-            tipos = repo.list_all()
-            for tipo in tipos:
-                if tipo.id == tipo_lancamento_id:
-                    return tipo.nome
-            return ""
-        except Exception:
-            return ""
-
     def _obter_responsavel(self) -> str:
-        """Obtém o nome do responsável legal da empresa."""
+        """Obtem o nome do responsavel legal da empresa."""
         if self._empresa_service is None:
-            return "Não informado"
+            return ""
         try:
             empresa = self._empresa_service.obter()
             if empresa and empresa.responsavel:
                 return empresa.responsavel
-            return "Não informado"
+            return ""
         except Exception:
-            return "Não informado"
+            return ""
 
     def _obter_cnpj(self) -> str:
-        """Obtém o CNPJ da empresa."""
+        """Obtem o CNPJ da empresa."""
         if self._empresa_service is None:
             return ""
         try:
@@ -361,307 +349,20 @@ class RelatorioPDFService:
             return ""
 
     def gerar_relatorio_obra(self, obra_id: int) -> Path:
-        from datetime import datetime
-
-        from jinja2 import Environment, FileSystemLoader
-        from xhtml2pdf import pisa
-
-        obra = self._obra_service.obter(obra_id)
-        if not obra:
-            raise ValueError(f"Obra {obra_id} não encontrada.")
-
-        resumo = self._resumo_service.calcular_resumo(obra_id)
-        aditivos = self._aditivo_service.listar_por_obra(obra_id)
-        lancamentos = self._lancamento_service.listar_por_obra(obra_id)
-        anexos = self._anexo_service.listar_por_obra(obra_id)
-
-        filename = f"relatorio_obra_{obra.codigo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        filepath = self._storage.relatorio_path(filename)
-
-        templates_dir = Path(__file__).parent.parent / "templates"
-        css_dir = Path(__file__).parent.parent / "static" / "css"
-
-        env = Environment(loader=FileSystemLoader(str(templates_dir)))
-        template = env.get_template("relatorio_obra.html")
-
-        css_path = css_dir / "relatorio.css"
-        css_content = css_path.read_text(encoding="utf-8")
-
-        def formatar_moeda(valor: Decimal) -> str:
-            return f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-        def formatar_data(d) -> str:
-            if d is None:
-                return ""
-            if hasattr(d, "strftime"):
-                return d.strftime("%d/%m/%Y")
-            return str(d)
-
-        def formatar_tamanho(tamanho_bytes: int) -> str:
-            if tamanho_bytes >= 1024 * 1024:
-                return f"{tamanho_bytes / (1024 * 1024):.1f} MB"
-            elif tamanho_bytes >= 1024:
-                return f"{tamanho_bytes / 1024:.1f} KB"
-            return f"{tamanho_bytes} B"
-
-        def texto(valor, padrao=""):
-            return padrao if valor is None else str(valor)
-
-        context = {
-            "obra": {
-                "codigo": texto(obra.codigo),
-                "nome": texto(obra.nome, "Obra sem nome"),
-                "cliente_contratante": texto(obra.cliente_contratante, "Não informado"),
-                "local_obra": texto(obra.local_obra, "Não informado"),
-                "engenheiro_responsavel": texto(obra.engenheiro_responsavel, "Não informado"),
-            },
-            "resumo": {
-                "valor_contratado": formatar_moeda(resumo.valor_contratado),
-                "total_aditivos": formatar_moeda(resumo.total_aditivos),
-                "total_gasto": formatar_moeda(resumo.total_gasto),
-                "valor_liquido": formatar_moeda(resumo.valor_liquido),
-            },
-            "aditivos": [
-                {
-                    "data": formatar_data(a.data_aditivo),
-                    "descricao": texto(a.descricao, "Sem descrição"),
-                    "valor": formatar_moeda(a.valor),
-                }
-                for a in aditivos
-            ],
-            "lancamentos": [
-                {
-                    "data": formatar_data(l.data_lancamento),
-                    "descricao": texto(l.descricao, "Sem descrição"),
-                    "tipo": self._obter_nome_tipo(l.tipo_lancamento_id),
-                    "origem": texto(l.origem_informacao, "Não informado"),
-                    "valor": formatar_moeda(l.valor_total),
-                }
-                for l in lancamentos
-            ],
-            "anexos": [
-                {
-                    "nome": texto(a.nome_original, "Sem nome"),
-                    "tipo": texto(a.tipo_anexo, "Não informado"),
-                    "data": formatar_data(a.data_documento or (a.created_at.date() if a.created_at else None)),
-                    "tamanho": formatar_tamanho(a.tamanho_bytes or 0),
-                }
-                for a in anexos
-            ],
-            "responsavel": self._obter_responsavel(),
-            "cnpj": self._obter_cnpj(),
-            "data_emissao": datetime.now().strftime("%d/%m/%Y"),
-            "css": css_content,
-        }
-
-        html_content = template.render(**context)
-
-        with open(str(filepath), "w+b") as output_file:
-            status = pisa.CreatePDF(
-                html_content,
-                dest=output_file,
-                encoding="utf-8",
-            )
-
-        if status.err:
-            raise ValueError(f"Erro ao gerar PDF: {status.err}")
-
-        from controle_obras.domain.models import RelatorioGerado
-
-        self._relatorio_repo.save(
-            RelatorioGerado(
-                obra_id=obra_id,
-                tipo_relatorio="obra",
-                arquivo_gerado=str(filepath),
-            )
-        )
-
-        return filepath
-
-    def gerar_relatorio_obra_weasyprint(self, obra_id: int) -> Path:
-        """Gera relatório PDF usando WeasyPrint + Jinja2.
+        """Gera relatorio PDF usando ReportLab Platypus.
         
-        Requisito: GTK Runtime instalado no Windows.
-        Se WeasyPrint falhar, retorna mensagem amigável.
+        Args:
+            obra_id: ID da obra para gerar o relatorio.
+            
+        Returns:
+            Path do arquivo PDF gerado.
+            
+        Raises:
+            ValueError: Se a obra nao for encontrada ou erro na geracao.
         """
-        from datetime import datetime
+        from controle_obras.application.reportlab_pdf_service import ReportLabPDFService
 
-        # Verificar dependência GTK
-        try:
-            from weasyprint import HTML
-        except ImportError:
-            raise ImportError(
-                "WeasyPrint não está instalado. "
-                "Execute: pip install weasyprint"
-            )
-        except Exception as e:
-            if "libgobject" in str(e) or "GTK" in str(e):
-                raise RuntimeError(
-                    "WeasyPrint requer o GTK Runtime no Windows.\n"
-                    "Baixe em: https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n"
-                    "Após instalar, reinicie o computador."
-                )
-            raise
-
-        # Verificar se GTK está funcionando
-        try:
-            HTML(string="<html><body><p>test</p></body></html>")
-        except Exception as e:
-            if "libgobject" in str(e) or "GTK" in str(e) or "cannot load library" in str(e):
-                raise RuntimeError(
-                    "WeasyPrint requer o GTK Runtime no Windows.\n"
-                    "Baixe em: https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n"
-                    "Após instalar, reinicie o computador."
-                )
-            raise
-
-        from jinja2 import Environment, FileSystemLoader
-
-        obra = self._obra_service.obter(obra_id)
-        if not obra:
-            raise ValueError(f"Obra {obra_id} não encontrada.")
-
-        resumo = self._resumo_service.calcular_resumo(obra_id)
-        aditivos = self._aditivo_service.listar_por_obra(obra_id)
-        lancamentos = self._lancamento_service.listar_por_obra(obra_id)
-        anexos = self._anexo_service.listar_por_obra(obra_id)
-
-        filename = f"relatorio_obra_{obra.codigo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        filepath = self._storage.relatorio_path(filename)
-
-        templates_dir = Path(__file__).parent.parent / "templates"
-        css_dir = Path(__file__).parent.parent / "static" / "css"
-
-        env = Environment(loader=FileSystemLoader(str(templates_dir)))
-        template = env.get_template("relatorio_obra_weasy.html")
-
-        css_path = css_dir / "relatorio_weasy.css"
-        css_content = css_path.read_text(encoding="utf-8")
-
-        def formatar_moeda(valor: Decimal) -> str:
-            return f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-        def formatar_data(d) -> str:
-            if d is None:
-                return ""
-            if hasattr(d, "strftime"):
-                return d.strftime("%d/%m/%Y")
-            return str(d)
-
-        def formatar_tamanho(tamanho_bytes: int) -> str:
-            if tamanho_bytes >= 1024 * 1024:
-                return f"{tamanho_bytes / (1024 * 1024):.1f} MB"
-            elif tamanho_bytes >= 1024:
-                return f"{tamanho_bytes / 1024:.1f} KB"
-            return f"{tamanho_bytes} B"
-
-        def texto(valor, padrao=""):
-            return padrao if valor is None else str(valor)
-
-        def quebrar_nome_arquivo(nome: str, tamanho: int = 28) -> str:
-            """Quebra nome longo do arquivo em múltiplas linhas."""
-            import re
-            if not nome:
-                return ""
-            partes = re.split(r"([_.\-])", str(nome))
-            linhas = []
-            linha = ""
-            for parte in partes:
-                tentativa = linha + parte
-                if len(tentativa) <= tamanho:
-                    linha = tentativa
-                else:
-                    if linha:
-                        linhas.append(linha)
-                    linha = parte
-            if linha:
-                linhas.append(linha)
-            return "<br>".join(linhas)
-
-        context = {
-            "obra": {
-                "codigo": texto(obra.codigo),
-                "nome": texto(obra.nome, "Obra sem nome"),
-                "cliente_contratante": texto(obra.cliente_contratante, "Não informado"),
-                "local_obra": texto(obra.local_obra, "Não informado"),
-                "engenheiro_responsavel": texto(obra.engenheiro_responsavel, "Não informado"),
-            },
-            "resumo": {
-                "valor_contratado": formatar_moeda(resumo.valor_contratado),
-                "total_aditivos": formatar_moeda(resumo.total_aditivos),
-                "total_gasto": formatar_moeda(resumo.total_gasto),
-                "valor_liquido": formatar_moeda(resumo.valor_liquido),
-            },
-            "aditivos": [
-                {
-                    "data": formatar_data(a.data_aditivo),
-                    "descricao": texto(a.descricao, "Sem descrição"),
-                    "valor": formatar_moeda(a.valor),
-                }
-                for a in aditivos
-            ],
-            "lancamentos": [
-                {
-                    "data": formatar_data(l.data_lancamento),
-                    "descricao": texto(l.descricao, "Sem descrição"),
-                    "tipo": self._obter_nome_tipo(l.tipo_lancamento_id),
-                    "valor": formatar_moeda(l.valor_total),
-                }
-                for l in lancamentos
-            ],
-            "anexos": [
-                {
-                    "nome_pdf": quebrar_nome_arquivo(a.nome_original),
-                    "tipo": texto(a.tipo_anexo, "Não informado"),
-                    "data": formatar_data(a.data_documento or (a.created_at.date() if a.created_at else None)),
-                    "tamanho": formatar_tamanho(a.tamanho_bytes or 0),
-                }
-                for a in anexos
-            ],
-            "responsavel": self._obter_responsavel(),
-            "cnpj": self._obter_cnpj(),
-            "data_emissao": datetime.now().strftime("%d/%m/%Y"),
-            "css": css_content,
-        }
-
-        html_content = template.render(**context)
-
-        HTML(string=html_content).write_pdf(str(filepath))
-
-        from controle_obras.domain.models import RelatorioGerado
-
-        self._relatorio_repo.save(
-            RelatorioGerado(
-                obra_id=obra_id,
-                tipo_relatorio="obra_weasyprint",
-                arquivo_gerado=str(filepath),
-            )
-        )
-
-        return filepath
-
-    def gerar_relatorio_obra_docx(self, obra_id: int) -> Path:
-        """Gera relatório PDF via DOCX + LibreOffice."""
-        from controle_obras.application.docx_report_service import DocxReportService
-
-        docx_service = DocxReportService(
-            obra_service=self._obra_service,
-            aditivo_service=self._aditivo_service,
-            lancamento_service=self._lancamento_service,
-            anexo_service=self._anexo_service,
-            resumo_service=self._resumo_service,
-            relatorio_repo=self._relatorio_repo,
-            storage=self._storage,
-            empresa_service=self._empresa_service,
-        )
-
-        return docx_service.gerar_relatorio_obra_docx(obra_id)
-
-    def gerar_relatorio_obra_reportlab(self, obra_id: int) -> Path:
-        """Gera relatório PDF usando ReportLab Platypus."""
-        from controle_obras.application.reportlab_pdf_service import ReportLabPDFService as RLService
-
-        rl_service = RLService(
+        rl_service = ReportLabPDFService(
             obra_service=self._obra_service,
             aditivo_service=self._aditivo_service,
             lancamento_service=self._lancamento_service,
@@ -674,4 +375,3 @@ class RelatorioPDFService:
 
         return rl_service.gerar_relatorio_obra_reportlab(obra_id)
 
-        return filepath

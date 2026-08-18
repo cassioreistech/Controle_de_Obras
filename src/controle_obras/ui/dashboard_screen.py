@@ -448,8 +448,12 @@ class DashboardScreen(QWidget):
         if self._obra_id is None:
             return
         try:
-            caminho = self._parent.relatorio_service.gerar_relatorio_obra(self._obra_id)
-            QMessageBox.information(self, "Relatório", f"PDF gerado:\n{caminho}")
+            self._parent.relatorio_service.gerar_relatorio_obra(self._obra_id)
+            QMessageBox.information(
+                self,
+                "Relatório",
+                "PDF gerado e aberto automaticamente na pasta Downloads."
+            )
         except Exception as e:
             QMessageBox.critical(self, "Erro", f"Falha ao gerar PDF:\n{str(e)}")
 
