@@ -107,22 +107,22 @@
     {% if anexos %}
     <section class="secao">
         <h3>ANEXOS</h3>
-        <table width="100%" repeat="1">
+        <table width="100%" repeat="1" style="-pdf-keep-in-frame-mode: shrink;">
             <thead>
                 <tr>
-                    <th width="48%">Nome</th>
-                    <th width="18%">Tipo</th>
-                    <th width="19%">Data</th>
-                    <th width="15%">Tamanho</th>
+                    <th width="230pt">Nome</th>
+                    <th width="75pt">Tipo</th>
+                    <th width="75pt">Data</th>
+                    <th width="65pt" style="text-align: right;">Tamanho</th>
                 </tr>
             </thead>
             <tbody>
                 {% for anexo in anexos %}
                 <tr>
-                    <td width="48%">{{ anexo.nome }}</td>
-                    <td width="18%">{{ anexo.tipo }}</td>
-                    <td width="19%">{{ anexo.data }}</td>
-                    <td width="15%" class="direita">{{ anexo.tamanho }}</td>
+                    <td width="230pt" style="font-size: 8pt; vertical-align: middle; padding-left: 4pt; padding-right: 4pt;">{{ anexo.nome }}</td>
+                    <td width="75pt" style="font-size: 8pt; vertical-align: middle; padding-left: 4pt; padding-right: 4pt;">{{ anexo.tipo }}</td>
+                    <td width="75pt" style="font-size: 8pt; vertical-align: middle; padding-left: 4pt; padding-right: 4pt;">{{ anexo.data }}</td>
+                    <td width="65pt" style="font-size: 8pt; vertical-align: middle; text-align: right; padding-left: 4pt; padding-right: 4pt;">{{ anexo.tamanho }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -131,10 +131,16 @@
     {% endif %}
 
     <!-- ASSINATURA -->
-    <section class="secao assinatura">
-        <p class="assinatura-texto">____________________________________</p>
-        <p class="assinatura-nome">{{ responsavel }}</p>
-        <p class="assinatura-cargo">Responsável Legal</p>
+    <section class="secao" style="margin-top: 20pt;">
+        <table width="100%" style="border: none;">
+            <tr>
+                <td style="border: none; text-align: center;">
+                    <p style="font-size: 10pt; color: #374151; margin-bottom: 4pt;">____________________________________</p>
+                    <p style="font-size: 11pt; font-weight: 700; color: #374151; margin: 0;">{{ responsavel }}</p>
+                    <p style="font-size: 9pt; color: #9CA3AF; margin: 2pt 0 0 0;">Responsável Legal</p>
+                </td>
+            </tr>
+        </table>
     </section>
 </body>
 </html>
