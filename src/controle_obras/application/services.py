@@ -479,11 +479,43 @@ class RelatorioPDFService:
         return filepath
 
     def gerar_relatorio_obra_weasyprint(self, obra_id: int) -> Path:
-        """Gera relatório PDF usando WeasyPrint + Jinja2."""
+        """Gera relatório PDF usando WeasyPrint + Jinja2.
+        
+        Requisito: GTK Runtime instalado no Windows.
+        Se WeasyPrint falhar, retorna mensagem amigável.
+        """
         from datetime import datetime
 
+        # Verificar dependência GTK
+        try:
+            from weasyprint import HTML
+        except ImportError:
+            raise ImportError(
+                "WeasyPrint não está instalado. "
+                "Execute: pip install weasyprint"
+            )
+        except Exception as e:
+            if "libgobject" in str(e) or "GTK" in str(e):
+                raise RuntimeError(
+                    "WeasyPrint requer o GTK Runtime no Windows.\n"
+                    "Baixe em: https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n"
+                    "Após instalar, reinicie o computador."
+                )
+            raise
+
+        # Verificar se GTK está funcionando
+        try:
+            HTML(string="<html><body><p>test</p></body></html>")
+        except Exception as e:
+            if "libgobject" in str(e) or "GTK" in str(e) or "cannot load library" in str(e):
+                raise RuntimeError(
+                    "WeasyPrint requer o GTK Runtime no Windows.\n"
+                    "Baixe em: https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer/releases\n"
+                    "Após instalar, reinicie o computador."
+                )
+            raise
+
         from jinja2 import Environment, FileSystemLoader
-        from weasyprint import HTML
 
         obra = self._obra_service.obter(obra_id)
         if not obra:
