@@ -95,43 +95,18 @@ LARGURA_UTIL = A4[0] - MARGENS["esquerda"] - MARGENS["direita"]
 
 
 class NumberedCanvas(Canvas):
-    """Canvas com numeracao de paginas e rodape padronizado."""
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._saved_page_states = []
-        self.page_number = 1
+    """Canvas com rodape simples - sem numeracao para evitar duplicacao."""
 
     def showPage(self) -> None:
-        self._saved_page_states.append(dict(self.__dict__))
-        self._saved_page_states[-1]["page_number"] = self.page_number
-        self.page_number += 1
+        self._draw_footer()
         super().showPage()
 
-    def save(self) -> None:
-        page_count = len(self._saved_page_states)
-        for state in self._saved_page_states:
-            self.__dict__.update(state)
-            self._draw_footer(state["page_number"], page_count)
-        super().save()
-
-    def _draw_footer(self, page_num: int, total_pages: int) -> None:
-        """Desenha rodape com numero da pagina."""
+    def _draw_footer(self) -> None:
+        """Desenha linha do rodape."""
         self.saveState()
-        self.setFillColor(CORES["texto_cinza"])
-        
-        # Linha superior do rodape
         self.setStrokeColor(CORES["borda"])
         self.setLineWidth(0.5)
         self.line(MARGENS["esquerda"], 1.2 * cm, A4[0] - MARGENS["direita"], 1.2 * cm)
-        
-        # Numero da pagina
-        self.setFont("FonteNormal", FONTES["tamanho_rodape"])
-        self.drawCentredString(
-            A4[0] / 2,
-            0.8 * cm,
-            f"Pagina {page_num} de {total_pages}"
-        )
         self.restoreState()
 
 
