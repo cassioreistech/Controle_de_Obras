@@ -478,6 +478,7 @@ def _build_tabela_padrao(
     fonte_normal: str,
     fonte_bold: str,
     alinhar_direita: list[bool] | None = None,
+    cabecalho_maiusculo: bool = False,  # Novo parametro para cabecalho em maiusculas
 ) -> list:
     """Constroi tabela padrao com cabecalho colorido e linhas zebradas.
     
@@ -490,6 +491,7 @@ def _build_tabela_padrao(
         fonte_normal: Nome da fonte normal.
         fonte_bold: Nome da fonte em negrito.
         alinhar_direita: Lista de bool indicando quais colunas alinhar a direita.
+        cabecalho_maiusculo: Se True, converte nomes das colunas para maiusculas.
     """
     elementos = []
     elementos.append(Paragraph(titulo, estilos["Secao"]))
@@ -497,8 +499,16 @@ def _build_tabela_padrao(
     if not dados:
         return elementos
     
+    # Converter colunas para maiusculas se solicitado
+    colunas_formatadas = [c.upper() for c in colunas] if cabecalho_maiusculo else colunas
+    
+    # Criar cabecalho com Paragraph para melhor controle de estilo
+    cabecalho_completo = [
+        Paragraph(col, estilos["TabelaCabecalho"]) for col in colunas_formatadas
+    ]
+    
     # Monteiro tabela com cabecalho + dados
-    tabelaDados = [colunas] + dados
+    tabelaDados = [cabecalho_completo] + dados
     num_cols = len(colunas)
     
     # Converter larguras relativas para absolutas se necessario
@@ -518,9 +528,10 @@ def _build_tabela_padrao(
         ("FONTSIZE", (0, 0), (-1, -1), FONTES["tamanho_tabela"]),
         ("GRID", (0, 0), (-1, -1), 0.5, CORES["borda"]),
         ("PADDING", (0, 0), (-1, -1), 4),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),  # Alterado para MIDDLE para centralizar verticalmente
         ("LEFTPADDING", (0, 0), (-1, -1), 5),
         ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ("ALIGN", (0, 0), (-1, 0), "CENTER"),  # Cabecalho centralizado
     ]
     
     # Linhas zebradas
@@ -740,6 +751,7 @@ class ReportLabPDFService:
                 fonte_normal=fonte_normal,
                 fonte_bold=fonte_bold,
                 alinhar_direita=[False, False, True],
+                cabecalho_maiusculo=True,  # Cabecalho em maiusculas e negrito
             ))
 
         # 4. Lancamentos
@@ -769,6 +781,7 @@ class ReportLabPDFService:
                     fonte_normal=fonte_normal,
                     fonte_bold=fonte_bold,
                     alinhar_direita=[False, False, False, True],
+                    cabecalho_maiusculo=True,  # Cabecalho em maiusculas e negrito
                 ))
 
         # 5. Anexos
