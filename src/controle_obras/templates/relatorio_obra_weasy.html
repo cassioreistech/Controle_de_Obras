@@ -111,32 +111,14 @@
     {% if anexos %}
     <section class="secao secao-anexos">
         <h3>ANEXOS</h3>
-        <table class="tabela-anexos">
-            <colgroup>
-                <col style="width: 48%;">
-                <col style="width: 18%;">
-                <col style="width: 19%;">
-                <col style="width: 15%;">
-            </colgroup>
-            <thead>
-                <tr>
-                    <th>Nome</th>
-                    <th>Tipo</th>
-                    <th>Data</th>
-                    <th class="direita">Tamanho</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for anexo in anexos %}
-                <tr>
-                    <td class="nome-anexo">{{ anexo.nome_pdf | safe }}</td>
-                    <td>{{ anexo.tipo }}</td>
-                    <td>{{ anexo.data }}</td>
-                    <td class="direita">{{ anexo.tamanho }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <ul class="lista-anexos">
+            {% for anexo in anexos %}
+            <li class="item-anexo">
+                <div class="anexo-nome">{{ anexo.nome }}</div>
+                <div class="anexo-meta">{{ anexo.tipo }} • {{ anexo.data }} • {{ anexo.tamanho }}</div>
+            </li>
+            {% endfor %}
+        </ul>
     </section>
     {% endif %}
 

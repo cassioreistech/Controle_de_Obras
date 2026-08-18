@@ -196,51 +196,36 @@ tbody tr:nth-child(even) td {
     text-align: right;
 }
 
-/* ==================== ANEXOS ==================== */
+/* ==================== LISTA DE ANEXOS ==================== */
 
-.secao-anexos {
-    break-before: page;
-    page-break-before: always;
-    break-inside: auto;
-    page-break-inside: auto;
+.lista-anexos {
+    list-style: none;
+    margin: 8pt 0 0 0;
+    padding: 0;
 }
 
-.tabela-anexos {
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: collapse;
-    font-size: 8.5pt;
+.item-anexo {
+    padding: 6pt 4pt;
+    border-bottom: 1pt solid #E5E7EB;
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
 
-.tabela-anexos th,
-.tabela-anexos td {
-    box-sizing: border-box;
-    padding: 5pt 4pt;
-    vertical-align: middle;
+.item-anexo:nth-child(even) {
+    background-color: #F9FAFB;
 }
 
-.tabela-anexos th {
-    text-align: left;
-    white-space: nowrap;
-}
-
-.tabela-anexos th:last-child,
-.tabela-anexos td:last-child {
-    text-align: right;
-    white-space: nowrap;
-}
-
-.tabela-anexos td {
+.anexo-nome {
+    font-size: 9pt;
+    font-weight: 600;
     overflow-wrap: anywhere;
     word-wrap: anywhere;
-    word-break: normal;
 }
 
-.tabela-anexos .nome-anexo {
+.anexo-meta {
     font-size: 8pt;
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-    white-space: normal;
+    color: #6B7280;
+    margin-top: 2pt;
 }
 
 /* ==================== LANÇAMENTOS ==================== */
