@@ -1,0 +1,209 @@
+/* ============================================
+   CSS para Relatório PDF - Controle de Obras
+   Motor: xhtml2pdf
+   ============================================ */
+
+@page {
+    size: A4;
+    margin: 1.5cm 1.5cm 2cm 1.5cm;
+}
+
+/* ==================== BASE ==================== */
+
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    color: #1E293B;
+    line-height: 1.4;
+}
+
+/* ==================== CABEÇALHO ==================== */
+
+.cabecalho {
+    margin-bottom: 16pt;
+    border-bottom: 2pt solid #1B2A4A;
+    padding-bottom: 10pt;
+}
+
+.cabecalho h1 {
+    font-size: 18pt;
+    color: #1B2A4A;
+    margin: 0 0 4pt 0;
+    font-weight: 700;
+    letter-spacing: 0.5pt;
+}
+
+.cabecalho h2 {
+    font-size: 13pt;
+    color: #1B2A4A;
+    font-weight: 700;
+    margin: 0 0 10pt 0;
+}
+
+/* ==================== INFO OBRA ==================== */
+
+.info-obra {
+    width: 100%;
+    margin: 8pt 0;
+}
+
+.info-obra table {
+    width: 100%;
+    border-collapse: collapse;
+    border: none;
+}
+
+.info-obra td {
+    padding: 2pt 4pt;
+    border: none;
+    vertical-align: top;
+    font-size: 10pt;
+    color: #334155;
+    width: 50%;
+}
+
+.info-obra strong {
+    color: #1E293B;
+}
+
+.emissao {
+    text-align: right;
+    font-size: 9pt;
+    color: #64748B;
+    margin: 8pt 0 0 0;
+    font-style: italic;
+}
+
+/* ==================== SEÇÕES ==================== */
+
+.secao {
+    margin-bottom: 16pt;
+}
+
+.secao h3 {
+    font-size: 12pt;
+    color: #1B2A4A;
+    margin: 0 0 8pt 0;
+    padding-bottom: 4pt;
+    border-bottom: 1pt solid #E2E8F0;
+    font-weight: 700;
+}
+
+/* ==================== TABELAS ==================== */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8pt 0;
+    font-size: 9pt;
+}
+
+thead th {
+    background-color: #1B2A4A;
+    color: white;
+    padding: 7pt 8pt;
+    text-align: left;
+    font-weight: 600;
+    font-size: 9pt;
+}
+
+tbody td {
+    padding: 6pt 8pt;
+    border-bottom: 1pt solid #E2E8F0;
+    vertical-align: top;
+}
+
+tbody tr:nth-child(even) td {
+    background-color: #F8FAFC;
+}
+
+.direita {
+    text-align: right;
+}
+
+/* ==================== TABELA RESUMO ==================== */
+
+.tabela-resumo {
+    margin: 10pt 0;
+}
+
+.tabela-resumo thead th {
+    text-align: center;
+    padding: 8pt;
+    font-size: 9pt;
+}
+
+.tabela-resumo tbody td {
+    text-align: center;
+    font-size: 11pt;
+    font-weight: 700;
+    padding: 12pt 8pt;
+    background-color: #F8FAFC;
+}
+
+/* ==================== COLUNAS TABELA DADOS ==================== */
+
+.col-data {
+    width: 12%;
+}
+
+.col-desc {
+    width: 58%;
+}
+
+.col-valor {
+    width: 30%;
+    text-align: right;
+}
+
+.col-desc-lanc {
+    width: 30%;
+}
+
+.col-tipo {
+    width: 20%;
+}
+
+.col-origem {
+    width: 18%;
+}
+
+.col-nome {
+    width: 42%;
+}
+
+.col-tipo-anexo {
+    width: 18%;
+}
+
+.col-tam {
+    width: 22%;
+    text-align: right;
+}
+
+/* ==================== RODAPÉ ==================== */
+
+.footer-table {
+    width: 100%;
+    border-top: 1pt solid #E2E8F0;
+    padding-top: 6pt;
+    margin-top: 16pt;
+}
+
+.footer-table td {
+    font-size: 8pt;
+    color: #94A3B8;
+    text-align: center;
+    border: none;
+    padding: 4pt;
+}
+
+/* ==================== UTILITÁRIOS ==================== */
+
+.page-break {
+    page-break-before: always;
+}
+
+.nao-quebrar {
+    page-break-inside: avoid;
+}

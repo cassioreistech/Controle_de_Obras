@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <style>{{ css }}</style>
+</head>
+<body>
+    <!-- CABEÇALHO -->
+    <header class="cabecalho">
+        <h1>RELATÓRIO DA OBRA</h1>
+        <h2>{{ obra.nome }}</h2>
+
+        <div class="info-obra">
+            <table>
+                <tr>
+                    <td><strong>Código:</strong> {{ obra.codigo }}</td>
+                    <td><strong>Cliente:</strong> {{ obra.cliente_contratante }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Local:</strong> {{ obra.local_obra }}</td>
+                    <td><strong>Engenheiro:</strong> {{ obra.engenheiro_responsavel }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <p class="emissao">Emissão: {{ data_emissao }}</p>
+    </header>
+
+    <!-- RESUMO FINANCEIRO -->
+    <section class="secao">
+        <h3>RESUMO FINANCEIRO</h3>
+        <table class="tabela-resumo">
+            <thead>
+                <tr>
+                    <th>Valor Contratado</th>
+                    <th>Total Aditivos</th>
+                    <th>Total Gasto</th>
+                    <th>Valor Líquido</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>R$ {{ resumo.valor_contratado }}</td>
+                    <td>R$ {{ resumo.total_aditivos }}</td>
+                    <td>R$ {{ resumo.total_gasto }}</td>
+                    <td>R$ {{ resumo.valor_liquido }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- ADITIVOS -->
+    {% if aditivos %}
+    <section class="secao">
+        <h3>ADITIVOS</h3>
+        <table class="tabela-dados">
+            <thead>
+                <tr>
+                    <th class="col-data">Data</th>
+                    <th class="col-desc">Descrição</th>
+                    <th class="col-valor">Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aditivo in aditivos %}
+                <tr>
+                    <td>{{ aditivo.data }}</td>
+                    <td>{{ aditivo.descricao }}</td>
+                    <td class="direita">R$ {{ aditivo.valor }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+
+    <!-- LANÇAMENTOS -->
+    {% if lancamentos %}
+    <section class="secao">
+        <h3>LANÇAMENTOS</h3>
+        <table class="tabela-dados">
+            <thead>
+                <tr>
+                    <th class="col-data">Data</th>
+                    <th class="col-desc-lanc">Descrição</th>
+                    <th class="col-tipo">Tipo</th>
+                    <th class="col-origem">Origem</th>
+                    <th class="col-valor">Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lanc in lancamentos %}
+                <tr>
+                    <td>{{ lanc.data }}</td>
+                    <td>{{ lanc.descricao }}</td>
+                    <td>{{ lanc.tipo }}</td>
+                    <td>{{ lanc.origem }}</td>
+                    <td class="direita">R$ {{ lanc.valor }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+
+    <!-- ANEXOS -->
+    {% if anexos %}
+    <section class="secao">
+        <h3>ANEXOS</h3>
+        <table class="tabela-dados">
+            <thead>
+                <tr>
+                    <th class="col-nome">Nome</th>
+                    <th class="col-tipo-anexo">Tipo</th>
+                    <th class="col-data">Data</th>
+                    <th class="col-tam">Tamanho</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for anexo in anexos %}
+                <tr>
+                    <td class="nome-anexo">{{ anexo.nome }}</td>
+                    <td>{{ anexo.tipo }}</td>
+                    <td>{{ anexo.data }}</td>
+                    <td class="direita">{{ anexo.tamanho }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+</body>
+</html>

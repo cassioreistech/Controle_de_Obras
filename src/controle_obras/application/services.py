@@ -319,9 +319,23 @@ class RelatorioPDFService:
         self._relatorio_repo = relatorio_repo
         self._storage = storage
 
+    def _obter_nome_tipo(self, tipo_lancamento_id: int | None) -> str:
+        """Obtém o nome do tipo de lançamento pelo ID."""
+        if tipo_lancamento_id is None:
+            return ""
+        try:
+            from controle_obras.infrastructure.repositories import TipoLancamentoRepository
+            repo = TipoLancamentoRepository(self._lancamento_service._repo._db)
+            tipo = repo.get_by_id(tipo_lancamento_id)
+            return tipo.nome if tipo else ""
+        except Exception:
+            return ""
+
     def gerar_relatorio_obra(self, obra_id: int) -> Path:
-        from reportlab.lib.pagesizes import A4
-        from reportlab.pdfgen import canvas
+        from datetime import datetime
+
+        from jinja2 import Environment, FileSystemLoader
+        from xhtml2pdf import pisa
 
         obra = self._obra_service.obter(obra_id)
         if not obra:
@@ -335,76 +349,91 @@ class RelatorioPDFService:
         filename = f"relatorio_obra_{obra.codigo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         filepath = self._storage.relatorio_path(filename)
 
-        c = canvas.Canvas(str(filepath), pagesize=A4)
-        width, height = A4
-        y = height - 50
+        templates_dir = Path(__file__).parent.parent / "templates"
+        css_dir = Path(__file__).parent.parent / "static" / "css"
 
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(50, y, f"Relatório da Obra: {obra.nome}")
-        y -= 30
+        env = Environment(loader=FileSystemLoader(str(templates_dir)))
+        template = env.get_template("relatorio_obra.html")
 
-        c.setFont("Helvetica", 10)
-        c.drawString(50, y, f"Código: {obra.codigo}")
-        y -= 15
-        c.drawString(50, y, f"Cliente: {obra.cliente_contratante}")
-        y -= 15
-        c.drawString(50, y, f"Local: {obra.local_obra}")
-        y -= 15
-        c.drawString(50, y, f"Engenheiro: {obra.engenheiro_responsavel}")
-        y -= 30
+        css_path = css_dir / "relatorio.css"
+        css_content = css_path.read_text(encoding="utf-8")
 
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(50, y, "Resumo Financeiro")
-        y -= 20
-        c.setFont("Helvetica", 10)
-        c.drawString(50, y, f"Valor contratado: R$ {resumo.valor_contratado:,.2f}")
-        y -= 15
-        c.drawString(50, y, f"Total de aditivos: R$ {resumo.total_aditivos:,.2f}")
-        y -= 15
-        c.drawString(50, y, f"Total gasto: R$ {resumo.total_gasto:,.2f}")
-        y -= 15
-        c.drawString(50, y, f"Valor líquido: R$ {resumo.valor_liquido:,.2f}")
-        y -= 30
+        def formatar_moeda(valor: Decimal) -> str:
+            return f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-        if aditivos:
-            c.setFont("Helvetica-Bold", 12)
-            c.drawString(50, y, "Aditivos")
-            y -= 20
-            c.setFont("Helvetica", 10)
-            for aditivo in aditivos:
-                c.drawString(50, y, f"- {aditivo.data_aditivo}: {aditivo.descricao} - R$ {aditivo.valor:,.2f}")
-                y -= 15
-                if y < 100:
-                    c.showPage()
-                    y = height - 50
-            y -= 15
+        def formatar_data(d) -> str:
+            if d is None:
+                return ""
+            if hasattr(d, "strftime"):
+                return d.strftime("%d/%m/%Y")
+            return str(d)
 
-        if lancamentos:
-            c.setFont("Helvetica-Bold", 12)
-            c.drawString(50, y, "Lançamentos")
-            y -= 20
-            c.setFont("Helvetica", 10)
-            for lanc in lancamentos:
-                c.drawString(50, y, f"- {lanc.data_lancamento}: {lanc.descricao} - R$ {lanc.valor_total:,.2f}")
-                y -= 15
-                if y < 100:
-                    c.showPage()
-                    y = height - 50
-            y -= 15
+        def formatar_tamanho(tamanho_bytes: int) -> str:
+            if tamanho_bytes >= 1024 * 1024:
+                return f"{tamanho_bytes / (1024 * 1024):.1f} MB"
+            elif tamanho_bytes >= 1024:
+                return f"{tamanho_bytes / 1024:.1f} KB"
+            return f"{tamanho_bytes} B"
 
-        if anexos:
-            c.setFont("Helvetica-Bold", 12)
-            c.drawString(50, y, "Anexos")
-            y -= 20
-            c.setFont("Helvetica", 10)
-            for anexo in anexos:
-                c.drawString(50, y, f"- {anexo.nome_original}")
-                y -= 15
-                if y < 100:
-                    c.showPage()
-                    y = height - 50
+        def texto(valor, padrao=""):
+            return padrao if valor is None else str(valor)
 
-        c.save()
+        context = {
+            "obra": {
+                "codigo": texto(obra.codigo),
+                "nome": texto(obra.nome, "Obra sem nome"),
+                "cliente_contratante": texto(obra.cliente_contratante, "Não informado"),
+                "local_obra": texto(obra.local_obra, "Não informado"),
+                "engenheiro_responsavel": texto(obra.engenheiro_responsavel, "Não informado"),
+            },
+            "resumo": {
+                "valor_contratado": formatar_moeda(resumo.valor_contratado),
+                "total_aditivos": formatar_moeda(resumo.total_aditivos),
+                "total_gasto": formatar_moeda(resumo.total_gasto),
+                "valor_liquido": formatar_moeda(resumo.valor_liquido),
+            },
+            "aditivos": [
+                {
+                    "data": formatar_data(a.data_aditivo),
+                    "descricao": texto(a.descricao, "Sem descrição"),
+                    "valor": formatar_moeda(a.valor),
+                }
+                for a in aditivos
+            ],
+            "lancamentos": [
+                {
+                    "data": formatar_data(l.data_lancamento),
+                    "descricao": texto(l.descricao, "Sem descrição"),
+                    "tipo": self._obter_nome_tipo(l.tipo_lancamento_id),
+                    "origem": texto(l.origem_informacao, "Não informado"),
+                    "valor": formatar_moeda(l.valor_total),
+                }
+                for l in lancamentos
+            ],
+            "anexos": [
+                {
+                    "nome": texto(a.nome_original, "Sem nome"),
+                    "tipo": texto(a.tipo_anexo, "Não informado"),
+                    "data": formatar_data(a.data_documento or (a.created_at.date() if a.created_at else None)),
+                    "tamanho": formatar_tamanho(a.tamanho_bytes or 0),
+                }
+                for a in anexos
+            ],
+            "data_emissao": datetime.now().strftime("%d/%m/%Y"),
+            "css": css_content,
+        }
+
+        html_content = template.render(**context)
+
+        with open(str(filepath), "w+b") as output_file:
+            status = pisa.CreatePDF(
+                html_content,
+                dest=output_file,
+                encoding="utf-8",
+            )
+
+        if status.err:
+            raise ValueError(f"Erro ao gerar PDF: {status.err}")
 
         from controle_obras.domain.models import RelatorioGerado
 
