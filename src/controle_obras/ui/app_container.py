@@ -6,14 +6,21 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QMainWindow,
+    QMessageBox,
     QPushButton,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
+from controle_obras.application.license_service import (
+    CHAVE_LICENCA,
+    TRIAL_DIAS,
+    LicencaService,
+)
 from controle_obras.application.services import (
     AditivoService,
     AnexoService,
@@ -68,6 +75,52 @@ class AppContainer(QMainWindow):
         self._init_ui()
         self._check_first_run()
 
+    def _aplicar_licenca_nos_servicos(self) -> None:
+        config = ConfiguracaoRepository(self.db).get(CHAVE_LICENCA)
+        if config and config.valor:
+            self.relatorio_service.set_licenca(config.valor)
+
+    def verificar_licenca(self) -> bool:
+        """Valida trial/chave no startup. Retorna False se deve fechar o app."""
+        status = self.licenca_service.verificar()
+
+        if status.tipo == "LICENCIADO":
+            return True
+
+        if status.tipo == "EM_TRIAL":
+            if status.dias_restantes is not None and status.dias_restantes <= 7:
+                QMessageBox.information(
+                    self,
+                    "Período de Teste",
+                    f"Seu período de teste termina em {status.dias_restantes} dia(s).\n"
+                    "Entre em contato para adquirir a licença.",
+                )
+            return True
+
+        if status.tipo == "TRIAL_EXPIRADO":
+            texto = (
+                f"O período de teste de {TRIAL_DIAS} dias terminou.\n\n"
+                "Digite a chave de licença para continuar usando o sistema."
+            )
+        elif status.tipo == "CHAVE_EXPIRADA":
+            texto = "A chave de licença expirou.\n\nDigite a nova chave para continuar."
+        else:
+            texto = "A chave de licença informada é inválida.\n\nDigite a chave correta."
+
+        while True:
+            chave, ok = QInputDialog.getText(
+                self,
+                "Licença",
+                texto + "\n\nChave de licença:",
+            )
+            if not ok:
+                return False
+            if self.licenca_service.registrar_chave(chave):
+                QMessageBox.information(self, "Licença", "Licença ativada com sucesso!")
+                self.relatorio_service.set_licenca(chave.strip().upper())
+                return True
+            texto = "Chave inválida. Verifique e tente novamente.\n\nChave de licença:"
+
     def _init_services(self) -> None:
         self.storage = AppStorage()
         self.db = DatabaseManager(self.storage.db_path())
@@ -80,6 +133,7 @@ class AppContainer(QMainWindow):
         self.anexo_service = AnexoService(AnexoRepository(self.db), self.storage)
         self.tipo_lancamento_service = TipoLancamentoService(TipoLancamentoRepository(self.db))
         self.config_service = ConfiguracaoSistemaService(ConfiguracaoRepository(self.db))
+        self.licenca_service = LicencaService(ConfiguracaoRepository(self.db))
         self.resumo_service = ObraResumoService(
             ObraRepository(self.db),
             AditivoRepository(self.db),
@@ -95,6 +149,7 @@ class AppContainer(QMainWindow):
             self.storage,
             self.empresa_service,
         )
+        self._aplicar_licenca_nos_servicos()
 
     def _init_ui(self) -> None:
         central = QWidget()

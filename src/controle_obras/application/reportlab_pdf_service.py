@@ -97,23 +97,35 @@ LARGURA_UTIL = A4[0] - MARGENS["esquerda"] - MARGENS["direita"]
 class NumberedCanvas(Canvas):
     """Canvas com rodape simples - sem numeracao para evitar duplicacao."""
 
+    def __init__(self, *args, rodape: str = "", fonte: str = "Helvetica", **kwargs):
+        super().__init__(*args, **kwargs)
+        self._rodape = rodape
+        self._fonte = fonte
+
     def showPage(self) -> None:
         self._draw_footer()
         super().showPage()
 
     def _draw_footer(self) -> None:
-        """Desenha linha do rodape."""
+        """Desenha linha do rodape e marca d'agua de licenca."""
         self.saveState()
         self.setStrokeColor(CORES["borda"])
         self.setLineWidth(0.5)
         self.line(MARGENS["esquerda"], 1.2 * cm, A4[0] - MARGENS["direita"], 1.2 * cm)
+        if self._rodape:
+            try:
+                self.setFont(self._fonte, 7)
+            except Exception:
+                self.setFont("Helvetica", 7)
+            self.setFillColor(colors.grey)
+            self.drawString(MARGENS["esquerda"], 0.6 * cm, self._rodape)
         self.restoreState()
 
 
-def _canvas_maker(canvas_cls):
+def _canvas_maker(canvas_cls, rodape: str = "", fonte: str = "Helvetica"):
     """Factory para criar canvas customizado."""
     def make_canvas(*args, **kwargs):
-        return canvas_cls(*args, **kwargs)
+        return canvas_cls(*args, rodape=rodape, fonte=fonte, **kwargs)
     return make_canvas
 
 
@@ -700,6 +712,11 @@ class ReportLabPDFService:
         self._relatorio_repo = relatorio_repo
         self._storage = storage
         self._empresa_service = empresa_service
+        self._licenca_chave = ""
+
+    def set_licenca(self, chave: str) -> None:
+        """Define a chave de licenca para marcar os PDFs gerados (rastreabilidade)."""
+        self._licenca_chave = chave.strip().upper()
 
     def _obter_responsavel(self) -> str:
         """Obtem o nome do responsavel da empresa."""
@@ -848,8 +865,22 @@ class ReportLabPDFService:
         cnpj = self._obter_cnpj()
         elementos.extend(_build_assinatura(responsavel, cnpj, estilos))
 
+        # Marca d'agua de rastreabilidade (cliente + licenca)
+        rodape = ""
+        if self._empresa_service is not None:
+            try:
+                empresa = self._empresa_service.obter()
+                if empresa:
+                    nome = empresa.razao_social or empresa.nome_fantasia or ""
+                    if nome:
+                        rodape = f"Licenciado para: {nome}"
+            except Exception:
+                pass
+        if self._licenca_chave:
+            rodape = (rodape + " | " if rodape else "") + f"Licenca: {self._licenca_chave}"
+
         # Gerar PDF
-        doc.build(elementos, canvasmaker=_canvas_maker(NumberedCanvas))
+        doc.build(elementos, canvasmaker=_canvas_maker(NumberedCanvas, rodape, fonte_normal))
         
         # Registrar no repositorio
         from controle_obras.domain.models import RelatorioGerado

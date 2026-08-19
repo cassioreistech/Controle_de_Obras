@@ -37,6 +37,10 @@ def main() -> None:
         window = AppContainer()
         logger.info("AppContainer criado")
 
+        if not window.verificar_licenca():
+            logger.info("Acesso negado pela verificacao de licenca")
+            sys.exit(0)
+
         window.showMaximized()
         logger.info("Janela exibida")
 

@@ -191,6 +191,21 @@ class TestRelatorioPDFStructure:
 
         assert "Pagina" not in texto_completo, "Numeracao de pagina nao deveria existir"
 
+    def test_pdf_contem_marca_dagua_de_licenca(self, pdf_service, servicos):
+        """O rodape traz o nome do cliente licenciado para rastreabilidade."""
+        pdf_service.set_licenca("20261231-E436F")
+        pdf_path = pdf_service.gerar_relatorio_obra_reportlab(1)
+
+        doc = fitz.open(str(pdf_path))
+        texto_completo = ""
+        for page in doc:
+            texto_completo += page.get_text()
+        doc.close()
+
+        assert "Licenciado para: Construtora Teste LTDA" in texto_completo, \
+            "Marca d'agua de cliente ausente"
+        assert "Licenca: 20261231-E436F" in texto_completo, "Codigo de licenca ausente"
+
 
 class TestRelatorioGoldenMaster:
     """Testes de snapshot visual (golden master).
