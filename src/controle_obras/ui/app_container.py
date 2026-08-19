@@ -511,5 +511,5 @@ def main() -> None:
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     window = AppContainer()
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec())

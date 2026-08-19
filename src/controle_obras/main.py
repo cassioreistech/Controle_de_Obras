@@ -37,7 +37,7 @@ def main() -> None:
         window = AppContainer()
         logger.info("AppContainer criado")
 
-        window.show()
+        window.showMaximized()
         logger.info("Janela exibida")
 
         sys.exit(app.exec())
