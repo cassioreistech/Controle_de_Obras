@@ -7,7 +7,12 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 *.egg-info/
+tests/ui/screenshots/
+build/
+dist/
+*.spec.bak
 data/app.db
+data/app.log
 data/backups/
 data/backup_history.json
 storage/anexos/*

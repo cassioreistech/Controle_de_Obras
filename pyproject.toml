@@ -8,13 +8,13 @@ version = "1.0.0"
 description = "Sistema desktop para controle financeiro e operacional de obras"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = {text = "Proprietary"}
 authors = [
     {name = "Controle de Obras"}
 ]
 keywords = ["obras", "construcao", "pyqt", "desktop"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: End Users/Desktop",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
