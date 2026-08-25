@@ -1,14 +1,19 @@
 """Gerenciamento de diretórios e caminhos internos do sistema."""
 
 import hashlib
+import os
 from pathlib import Path
 
 
 class AppStorage:
-    """Centraliza os caminhos internos usados pelo sistema."""
+    """Centraliza os caminhos internos usados pelo sistema.
 
-    def __init__(self, base_dir: Path | str = ".") -> None:
-        self.base_dir = Path(base_dir).resolve()
+    Os dados ficam em um diretório seguro do usuário (Windows: %APPDATA%),
+    imune a permissões, sincronização em nuvem e instalação em Program Files.
+    """
+
+    def __init__(self, base_dir: Path | str | None = None) -> None:
+        self.base_dir = Path(self._resolve_base_dir(base_dir)).resolve()
         self.data_dir = self.base_dir / "data"
         self.storage_dir = self.base_dir / "storage"
         self.anexos_dir = self.storage_dir / "anexos"
@@ -27,6 +32,30 @@ class AppStorage:
             self.logos_dir,
         ):
             directory.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _resolve_base_dir(base_dir: Path | str | None) -> Path | str:
+        """Resolve o diretório-base dos dados.
+
+        Ordem de prioridade:
+        1. ``base_dir`` explícito (testes/uso programático)
+        2. Env ``CONTROLE_OBRAS_DATA_DIR`` (override de desenvolvimento)
+        3. Windows: ``%APPDATA%\\ControleDeObras`` (distribuição segura)
+        4. Fallback: diretório de trabalho ``.`` (Linux/CI/dev)
+        """
+        if base_dir is not None:
+            return base_dir
+
+        override = os.environ.get("CONTROLE_OBRAS_DATA_DIR")
+        if override:
+            return override
+
+        if os.name == "nt":
+            appdata = os.environ.get("APPDATA")
+            if appdata:
+                return Path(appdata) / "ControleDeObras"
+
+        return Path(".")
 
     def db_path(self) -> Path:
         return self.data_dir / "app.db"

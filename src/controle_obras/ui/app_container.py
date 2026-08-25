@@ -1,6 +1,7 @@
 """Container principal da aplicação com navegação por páginas."""
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from controle_obras import APP_NAME, COMPANY_NAME, __version__
 from controle_obras.application.license_service import (
     CHAVE_LICENCA,
     TRIAL_DIAS,
@@ -69,11 +71,28 @@ class AppContainer(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Controle de Obras")
+        self.setWindowIcon(self._carregar_icone())
         self.setMinimumSize(1200, 800)
 
         self._init_services()
         self._init_ui()
         self._check_first_run()
+
+    @staticmethod
+    def _carregar_icone() -> QIcon:
+        from pathlib import Path
+
+        import sys as _sys
+
+        # Caminho do asset no empacotado (PyInstaller) ou em dev
+        base = getattr(_sys, "_MEIPASS", None)
+        if base:
+            path = Path(base) / "assets" / "icon.png"
+        else:
+            path = Path(__file__).resolve().parents[3] / "assets" / "icon.png"
+        if path.exists():
+            return QIcon(str(path))
+        return QIcon()
 
     def _aplicar_licenca_nos_servicos(self) -> None:
         config = ConfiguracaoRepository(self.db).get(CHAVE_LICENCA)
@@ -330,6 +349,46 @@ class AppContainer(QMainWindow):
             else:
                 self.show_obras_list()
 
+            # Backup automático diário ao iniciar
+            self._auto_backup_startup()
+
+    def _auto_backup_startup(self) -> None:
+        """Cria backup diario ao iniciar, se já existe dados."""
+        import threading
+
+        def _backup_silencioso() -> None:
+            try:
+                from controle_obras.application.services import BackupApplicationService
+                from controle_obras.infrastructure.backup import BackupService as InfraBackupService
+
+                backup_service = BackupApplicationService(
+                    InfraBackupService(self.storage, self.db),
+                    self.empresa_service,
+                    self.obra_service,
+                    self.anexo_service,
+                    self.storage,
+                )
+                
+                obras = self.obra_service.listar()
+                empresa = self.empresa_service.obter()
+                if len(obras) > 0 and empresa and empresa.razao_social:
+                    resultado = backup_service.backup.auto_backup_diario(
+                        nome_empresa=empresa.razao_social,
+                        versao_sistema=__version__,
+                        quantidade_obras=len(obras),
+                        quantidade_anexos=0,
+                    )
+                    if resultado:
+                        import logging
+                        logging.getLogger(__name__).info("Backup automático criado: %s", resultado)
+            except Exception as e:
+                # Não bloquear startup se backup falhar
+                import logging
+                logging.getLogger(__name__).warning("Falha no backup automático: %s", e)
+
+        # Rodar em thread separada para não bloquear UI
+        threading.Thread(target=_backup_silencioso, daemon=True).start()
+
     def show_welcome(self) -> None:
         self.stack.setCurrentWidget(self.welcome_screen)
         self._update_context("")
@@ -534,13 +593,38 @@ class AppContainer(QMainWindow):
         layout.addWidget(secao_software)
 
         info_software = QLabel(
-            "<b>Versão:</b> 1.0.0<br>"
-            "<b>Desenvolvido por:</b> CASSIO REIS TECH<br>"
+            f"<b>Versão:</b> {__version__}<br>"
+            f"<b>Desenvolvido por:</b> {COMPANY_NAME}<br>"
             "<b>Tecnologias:</b> Python, PySide6, SQLite<br>"
             "<b>Ano:</b> 2026"
         )
         info_software.setStyleSheet("font-size: 12px;")
         layout.addWidget(info_software)
+
+        # Seção: Licença
+        secao_licenca = QLabel("Licença")
+        secao_licenca.setStyleSheet("font-size: 13px; font-weight: bold; color: #1B2A4A; margin-top: 10px;")
+        layout.addWidget(secao_licenca)
+
+        licenca_layout = QHBoxLayout()
+        from controle_obras.application.license_service import obter_maquina_id
+
+        self.lbl_id_maquina = QLabel(f"ID da máquina: {obter_maquina_id()}")
+        self.lbl_id_maquina.setStyleSheet("font-size: 11px; color: #6B7280;")
+        licenca_layout.addWidget(self.lbl_id_maquina, 1)
+
+        btn_maquina_id = QPushButton("Copiar ID da máquina")
+        btn_maquina_id.setToolTip("Envie este ID para gerar sua chave de licença")
+        btn_maquina_id.clicked.connect(self._copiar_id_maquina)
+        licenca_layout.addWidget(btn_maquina_id)
+
+        form_layout.addRow(":", licenca_layout)
+
+        self.input_chave_licenca = QLineEdit()
+        self.input_chave_licenca.setPlaceholderText("Cole aqui a chave de licença (YYYYMMDD-XXXXX)")
+        form_layout.addRow("Chave de licença:", self.input_chave_licenca)
+
+        layout.addLayout(form_layout)
 
         # Botões
         btn_layout = QHBoxLayout()
@@ -583,6 +667,21 @@ class AppContainer(QMainWindow):
         self._logo_path_temp = ""
         self.lbl_logo_path.setText("Nenhum logo selecionado")
 
+    def _copiar_id_maquina(self) -> None:
+        from PySide6.QtWidgets import QApplication, QMessageBox
+
+        from controle_obras.application.license_service import obter_maquina_id
+
+        maquina_id = obter_maquina_id()
+        QApplication.clipboard().setText(maquina_id)
+        self.lbl_id_maquina.setText(f"ID da máquina: {maquina_id}")
+        QMessageBox.information(
+            self,
+            "ID da máquina",
+            f"ID copiado para a área de transferência:\n\n{maquina_id}\n\n"
+            "Envie este ID para gerar sua chave de licença.",
+        )
+
     def _salvar_configuracoes(self, dialog: QDialog) -> None:
         from PySide6.QtWidgets import QMessageBox
 
@@ -624,6 +723,26 @@ class AppContainer(QMainWindow):
                 empresa.logo_path = ""
 
             self.empresa_service.salvar(empresa)
+
+            # Processar chave de licenca (se preenchida)
+            chave = self.input_chave_licenca.text().strip()
+            if chave:
+                if self.licenca_service.registrar_chave(chave):
+                    self.relatorio_service.set_licenca(chave.strip().upper())
+                    QMessageBox.information(
+                        dialog,
+                        "Licença",
+                        "Licença ativada com sucesso!\n"
+                        "Reinicie a aplicação para aplicar.",
+                    )
+                else:
+                    QMessageBox.warning(
+                        dialog,
+                        "Licença",
+                        "Chave inválida para esta máquina. "
+                        "Verifique o ID da máquina e a chave.",
+                    )
+                    return
 
             QMessageBox.information(dialog, "Sucesso", "Configurações salvas com sucesso!")
             dialog.close()

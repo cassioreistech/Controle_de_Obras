@@ -62,6 +62,7 @@ def _validar_screenshot(caminho: Path, nome: str) -> None:
 def app_com_dados(qtbot, tmp_path: Path, monkeypatch):
     """AppContainer com dados de exemplo populados."""
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CONTROLE_OBRAS_DATA_DIR", str(tmp_path))
 
     container = AppContainer()
     qtbot.addWidget(container)

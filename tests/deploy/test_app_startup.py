@@ -19,6 +19,7 @@ from controle_obras.ui.app_container import AppContainer
 def app_startup(qtbot, tmp_path: Path, monkeypatch):
     """Inicializa o app como no main.py (sem entrar no event loop)."""
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CONTROLE_OBRAS_DATA_DIR", str(tmp_path))
     return tmp_path
 
 

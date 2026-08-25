@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import shutil
 import sqlite3
 import tempfile
@@ -15,8 +16,10 @@ from controle_obras.infrastructure.storage import AppStorage, FileHasher
 
 logger = logging.getLogger(__name__)
 
-BACKUP_VERSION = "1.0"
+BACKUP_VERSION = "2.0"
 REQUIRED_PATHS = ["manifest.json", "database/app.db", "storage/anexos/"]
+MAX_BACKUPS_DIR = 10  # Manter no máximo 10 backups no diretório padrão
+BACKUP_INTEGRITY_KEY = "backup_integrity_verified"
 
 
 class BackupError(Exception):
@@ -53,6 +56,9 @@ class BackupService:
         caminho_zip = destino_path / nome_arquivo
 
         try:
+            # 1. Verificar integridade do banco ANTES do backup
+            self._check_database_integrity()
+
             with tempfile.TemporaryDirectory(prefix="controle_obras_backup_") as tmp:
                 tmp_path = Path(tmp)
                 db_dir = tmp_path / "database"
@@ -126,6 +132,12 @@ class BackupService:
             if not caminho_zip.exists():
                 raise BackupError("Arquivo de backup não foi criado.")
 
+            # 2. Verificar integridade do ZIP após criação
+            self._verify_zip_integrity(caminho_zip)
+
+            # 3. Política de retenção: manter no máximo N backups
+            self._apply_retention_policy(destino_path)
+
             logger.info("Backup concluído: %s", caminho_zip)
             return caminho_zip
         except Exception as exc:
@@ -142,6 +154,94 @@ class BackupService:
         finally:
             target.close()
             source.close()
+
+    def _check_database_integrity(self) -> None:
+        """Verifica integridade do banco ANTES de fazer backup."""
+        conn = sqlite3.connect(str(self.db.db_path))
+        try:
+            result = conn.execute("PRAGMA integrity_check").fetchone()
+            if result[0] != "ok":
+                logger.error("Integridade do banco ANTES do backup: %s", result[0])
+                raise BackupError(
+                    f"O banco de dados está corrompido!\n"
+                    f"Detalhes: {result[0]}\n\n"
+                    f"Não é possível criar backup até corrigir."
+                )
+        finally:
+            conn.close()
+
+    def _verify_zip_integrity(self, caminho_zip: Path) -> None:
+        """Verifica que o arquivo ZIP foi criado corretamente e pode ser lido."""
+        if not zipfile.is_zipfile(caminho_zip):
+            raise BackupError("Arquivo de backup não é um ZIP válido.")
+        
+        with zipfile.ZipFile(caminho_zip, "r") as zf:
+            # Se bad_file() não levantar exceção, o ZIP é válido
+            bad = zf.testzip()
+            if bad is not None:
+                raise BackupError(
+                    f"Arquivo dentro do backup está corrompido: {bad}\n"
+                    f"O backup pode estar incompleto."
+                )
+            
+            # Verificar que o arquivo crítico existe
+            if "manifest.json" not in zf.namelist():
+                raise BackupError("Manifesto ausente no backup.")
+            
+            if not any(n.startswith("database/app.db") for n in zf.namelist()):
+                raise BackupError("Banco de dados ausente no backup.")
+
+    def _apply_retention_policy(self, backup_dir: Path) -> None:
+        """Remove backups mais antigos mantendo no máximo MAX_BACKUPS_DIR."""
+        backups = sorted(
+            [f for f in backup_dir.iterdir() if f.is_file() and f.suffix == ".zip"],
+            key=lambda f: f.stat().st_mtime,
+            reverse=True,
+        )
+        if len(backups) > MAX_BACKUPS_DIR:
+            to_remove = backups[MAX_BACKUPS_DIR:]
+            for bkp in to_remove:
+                try:
+                    bkp.unlink()
+                    logger.info("Backup removido por política de retenção: %s", bkp.name)
+                except Exception:
+                    logger.warning("Falha ao remover backup antigo: %s", bkp.name)
+
+    def auto_backup_diario(
+        self,
+        nome_empresa: str,
+        versao_sistema: str,
+        quantidade_obras: int,
+        quantidade_anexos: int,
+    ) -> Path | None:
+        """Cria backup automático ao iniciar o app, mas só se não houver backup de hoje."""
+        backup_dir = self.storage.base_dir / "data" / "backups"
+        hoje = datetime.now().strftime("%Y-%m-%d")
+        
+        # Verificar se já existe backup de hoje
+        for bkp in backup_dir.iterdir():
+            if bkp.is_file() and bkp.suffix == ".zip" and hoje in bkp.name:
+                logger.info("Backup diário já existe: %s", bkp.name)
+                return None
+        
+        # Criar backup silencioso
+        return self.gerar_backup(
+            nome_empresa=nome_empresa,
+            versao_sistema=versao_sistema,
+            quantidade_obras=quantidade_obras,
+            quantidade_anexos=quantidade_anexos,
+        )
+
+    def gerar_manifest(
+        self,
+        timestamp: str,
+        versao_sistema: str,
+        nome_empresa: str,
+        quantidade_obras: int,
+        quantidade_anexos: int,
+        db_path: Path,
+    ) -> dict[str, Any]:
+        return self._gerar_manifest(timestamp, versao_sistema, nome_empresa, quantidade_obras, quantidade_anexos, db_path)
 
     def _gerar_manifest(
         self,
@@ -321,13 +421,22 @@ class BackupService:
                 )
 
             conn.execute("SELECT COUNT(*) FROM obras").fetchone()
+            
+            # 4. Verificar integridade do banco restaurado
+            result = conn.execute("PRAGMA integrity_check").fetchone()
+            if result[0] != "ok":
+                raise RestoreValidationError(
+                    f"Banco restaurado está corrompido!\n"
+                    f"Detalhes: {result[0]}\n\n"
+                    f"Seu backup de segurança anterior ainda está disponível."
+                )
         finally:
             conn.close()
 
         if not self.storage.anexos_dir.exists():
             logger.warning("Diretório de anexos não encontrado após restauração.")
 
-        logger.info("Validações pós-restauração concluídas.")
+        logger.info("Validações pós-restauração concluídas com integridade OK.")
 
     def _verificar_logos(self) -> None:
         """Atualiza logo_path no DB caso aponte para origem antiga."""
@@ -376,6 +485,13 @@ class BackupService:
                     if arquivo.is_file():
                         arcname = "reports/obras/" + arquivo.relative_to(
                             self.storage.obras_reports_dir
+                        ).as_posix()
+                        zf.write(arquivo, arcname)
+            if self.storage.logos_dir.exists():
+                for arquivo in self.storage.logos_dir.rglob("*"):
+                    if arquivo.is_file():
+                        arcname = "storage/logos/" + arquivo.relative_to(
+                            self.storage.logos_dir
                         ).as_posix()
                         zf.write(arquivo, arcname)
 

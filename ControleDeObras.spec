@@ -4,6 +4,7 @@
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.win32.versioninfo import VSVersionInfo  # noqa: F401
 
 project_root = Path(SPECPATH).resolve()
 src_dir = project_root / "src"
@@ -14,7 +15,10 @@ a = Analysis(
     [str(src_dir / "controle_obras" / "main.py")],
     pathex=[str(src_dir)],
     binaries=[],
-    datas=[],
+    datas=[
+        (str(project_root / "assets" / "icon.png"), "assets"),
+        (str(project_root / "assets" / "icon.ico"), "assets"),
+    ],
     hiddenimports=[
         "controle_obras.application.reportlab_pdf_service",
         "controle_obras.application.docx_report_service",
@@ -59,6 +63,8 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=str(project_root / "assets" / "icon.ico"),
+    version=str(project_root / "version_info.txt"),
 )
 
 coll = COLLECT(

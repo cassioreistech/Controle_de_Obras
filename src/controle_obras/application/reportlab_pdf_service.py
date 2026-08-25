@@ -1,4 +1,4 @@
-﻿"""Gerador de relatorio PDF usando ReportLab Platypus com arquitetura de componentes.
+"""Gerador de relatorio PDF usando ReportLab Platypus com arquitetura de componentes.
 
 Layout profissional com:
 - Cabecalho com faixa colorida e identidade visual

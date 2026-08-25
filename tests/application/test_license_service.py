@@ -1,4 +1,4 @@
-"""Testes do servico de licenciamento (trial + chave HMAC)."""
+"""Testes do servico de licenciamento (trial + chave HMAC vinculada a maquina)."""
 
 from datetime import date, timedelta
 
@@ -8,30 +8,39 @@ from controle_obras.application.license_service import (
     TRIAL_DIAS,
     LicencaService,
     gerar_chave,
+    obter_maquina_id,
     validar_chave,
 )
 from controle_obras.domain.models import Configuracao
 
+MAQUINA = obter_maquina_id()
+
 
 def test_gerar_chave_roundtrip():
     validade = date(2026, 12, 31)
-    chave = gerar_chave(validade)
+    chave = gerar_chave(validade, MAQUINA)
     assert len(chave) == 14
     assert chave[8] == "-"
-    assert validar_chave(chave) == validade
+    assert validar_chave(chave, MAQUINA) == validade
+
+
+def test_chave_nao_funciona_em_outra_maquina():
+    validade = date(2026, 12, 31)
+    chave = gerar_chave(validade, MAQUINA)
+    assert validar_chave(chave, "OUTRAMAQ") is None
 
 
 def test_chave_invalida_rejeitada():
-    assert validar_chave("") is None
-    assert validar_chave("abc") is None
-    assert validar_chave("20261231-XXXXX") is None
-    assert validar_chave("2026123-1-XXXXX") is None
+    assert validar_chave("", MAQUINA) is None
+    assert validar_chave("abc", MAQUINA) is None
+    assert validar_chave("20261231-XXXXX", MAQUINA) is None
+    assert validar_chave("2026123-1-XXXXX", MAQUINA) is None
 
 
 def test_chave_com_data_passada_valida_assinatura():
     validade = date(2020, 1, 1)
-    chave = gerar_chave(validade)
-    assert validar_chave(chave) == validade
+    chave = gerar_chave(validade, MAQUINA)
+    assert validar_chave(chave, MAQUINA) == validade
 
 
 def test_primeiro_uso_inicia_trial(tmp_path):
@@ -77,7 +86,7 @@ def test_trial_expirado(tmp_path):
 def test_chave_valida_libera(tmp_path):
     repo = _repo(tmp_path)
     service = LicencaService(repo)
-    chave = gerar_chave(date.today() + timedelta(days=30))
+    chave = gerar_chave(date.today() + timedelta(days=30), MAQUINA)
     assert service.registrar_chave(chave) is True
     status = service.verificar()
     assert status.tipo == "LICENCIADO"
@@ -94,7 +103,7 @@ def test_chave_invalida_nao_registra(tmp_path):
 def test_chave_expirada_bloqueia(tmp_path):
     repo = _repo(tmp_path)
     service = LicencaService(repo)
-    chave = gerar_chave(date.today() - timedelta(days=1))
+    chave = gerar_chave(date.today() - timedelta(days=1), MAQUINA)
     assert service.registrar_chave(chave) is True
     status = service.verificar()
     assert status.tipo == "CHAVE_EXPIRADA"

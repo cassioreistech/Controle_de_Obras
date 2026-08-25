@@ -17,6 +17,7 @@ from controle_obras.ui.welcome_screen import WelcomeScreen
 @pytest.fixture
 def app_container(qtbot, tmp_path: Path, monkeypatch):
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CONTROLE_OBRAS_DATA_DIR", str(tmp_path))
     container = AppContainer()
     qtbot.addWidget(container)
     return container
