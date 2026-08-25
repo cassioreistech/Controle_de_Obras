@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import date
 from typing import TYPE_CHECKING
 
+from decimal import Decimal, InvalidOperation
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
@@ -68,7 +70,7 @@ class ObraFormScreen(QWidget):
         form_layout.addRow("Nome *", self.input_nome)
         form_layout.addRow("Cliente Contratante", self.input_cliente)
         form_layout.addRow("Local da Obra", self.input_local)
-        form_layout.addRow("Engenheiro Responsável", self.input_engenheiro)
+        form_layout.addRow("Responsável", self.input_engenheiro)
         form_layout.addRow("Data de Início", self.input_data_inicio)
         form_layout.addRow("Previsão de Término", self.input_previsao)
         form_layout.addRow("Status", self.input_status)
@@ -108,7 +110,7 @@ class ObraFormScreen(QWidget):
                 if obra.previsao_termino:
                     self.input_previsao.setDate(obra.previsao_termino)
                 self.input_status.setCurrentText(obra.status)
-                self.input_valor.setText(str(obra.valor_contratado_inicial))
+                self.input_valor.setText(self._formatar_valor(Decimal(str(obra.valor_contratado_inicial))))
                 self.input_observacoes.setPlainText(obra.observacoes)
         else:
             self.title.setText("Nova Obra")
@@ -126,18 +128,45 @@ class ObraFormScreen(QWidget):
         self.input_valor.clear()
         self.input_observacoes.clear()
 
+    def _parse_valor(self, text: str) -> Decimal:
+        """Parse valor monetário suportando formatos brasileiro e Python."""
+        text = text.strip()
+        if not text or text in ("0", "0,00", "0.00"):
+            return Decimal("0.00")
+
+        # Formato brasileiro: "1.000,00" → milhares com ponto, decimal com vírgula
+        if "," in text:
+            # Remove pontos de milhares, converte vírgula para ponto decimal
+            text = text.replace(".", "").replace(",", ".")
+        # Formato Python: "1000.00" (sem vírgula, ponto é decimal)
+        # Não faz nothing — ponto já é separador decimal
+
+        try:
+            return Decimal(text)
+        except InvalidOperation:
+            return Decimal("0.00")
+
+    def _formatar_valor(self, valor: Decimal) -> str:
+        """Formata Decimal para exibição no campo (formato brasileiro)."""
+        # Converte para string e formata como BRL: "1.000,00"
+        partes = f"{valor:.2f}".split(".")
+        inteiro = partes[0]
+        decimal = partes[1] if len(partes) > 1 else "00"
+        # Adiciona separador de milhares
+        inteiro_formatado = f"{int(inteiro):,}".replace(",", ".")
+        return f"{inteiro_formatado},{decimal}"
+
     def _salvar(self) -> None:
         codigo = self.input_codigo.text().strip()
         nome = self.input_nome.text().strip()
-        valor_text = self.input_valor.text().strip().replace(".", "").replace(",", ".")
 
         if not codigo or not nome:
             QMessageBox.warning(self, "Validação", "Código e nome são obrigatórios.")
             return
 
         try:
-            valor = float(valor_text) if valor_text else 0.0
-        except ValueError:
+            valor = self._parse_valor(self.input_valor.text())
+        except Exception:
             QMessageBox.warning(self, "Validação", "Valor contratado inválido.")
             return
 

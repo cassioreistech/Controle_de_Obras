@@ -76,6 +76,15 @@ class BackupService:
                         dirs_exist_ok=True,
                     )
 
+                logos_dir_backup = tmp_path / "storage" / "logos"
+                logos_dir_backup.mkdir(parents=True, exist_ok=True)
+                if self.storage.logos_dir.exists():
+                    shutil.copytree(
+                        self.storage.logos_dir,
+                        logos_dir_backup,
+                        dirs_exist_ok=True,
+                    )
+
                 if self.storage.obras_reports_dir.exists():
                     shutil.copytree(
                         self.storage.obras_reports_dir,
@@ -201,6 +210,15 @@ class BackupService:
                         shutil.rmtree(self.storage.obras_reports_dir)
                     shutil.copytree(reports_backup, self.storage.obras_reports_dir)
 
+                logos_backup = tmp_path / "storage" / "logos"
+                if logos_backup.exists():
+                    if self.storage.logos_dir.exists():
+                        shutil.rmtree(self.storage.logos_dir)
+                    shutil.copytree(logos_backup, self.storage.logos_dir)
+
+                # Verificar se logo_path no DB aponta para arquivo antigo; se sim, atualizar
+                self._verificar_logos()
+
                 self._validar_pos_restauracao()
 
         logger.info("Restauração concluída com sucesso.")
@@ -278,6 +296,8 @@ class BackupService:
         if not self.db.db_path.exists():
             raise RestoreValidationError("Banco de dados não encontrado após restauração.")
 
+        self._verificar_logos()
+
         conn = sqlite3.connect(str(self.db.db_path))
         try:
             conn.execute("PRAGMA foreign_keys = ON")
@@ -308,6 +328,29 @@ class BackupService:
             logger.warning("Diretório de anexos não encontrado após restauração.")
 
         logger.info("Validações pós-restauração concluídas.")
+
+    def _verificar_logos(self) -> None:
+        """Atualiza logo_path no DB caso aponte para origem antiga."""
+        import os
+        conn = sqlite3.connect(str(self.db.db_path))
+        try:
+            row = conn.execute("SELECT id, logo_path FROM empresa LIMIT 1").fetchone()
+            if row and row["logo_path"]:
+                old_path = row["logo_path"]
+                # Se o arquivo não existe mais, tenta encontrar no logos_dir
+                if old_path and not os.path.exists(old_path):
+                    import glob
+                    matches = glob.glob(str(self.storage.logos_dir / "logo*"))
+                    if matches:
+                        new_path = matches[0]
+                        conn.execute(
+                            "UPDATE empresa SET logo_path=? WHERE id=?",
+                            (new_path, row["id"]),
+                        )
+                        conn.commit()
+                        logger.info("Logo atualizado para: %s", new_path)
+        finally:
+            conn.close()
 
     def _criar_backup_seguranca(self) -> Path:
         """Cria backup automático do estado atual antes de restaurar."""

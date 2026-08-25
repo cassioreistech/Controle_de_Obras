@@ -28,15 +28,7 @@ from reportlab.platypus import (
     TableStyle,
     KeepTogether,
     HRFlowable,
-)
-from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
-    Table,
-    TableStyle,
-    KeepTogether,
-    HRFlowable,
+    Image,
 )
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
@@ -66,6 +58,14 @@ CORES = {
     "vermelho_gasto": colors.HexColor("#DC2626"),
     "verde_liquido": colors.HexColor("#16A34A"),
 }
+
+# Caracteres inválidos para nomes de arquivo no Windows
+_CHARS_INVALID = set('<>:"/\\|?*')
+
+
+def _sanitizar_para_filename(nome: str) -> str:
+    """Remove ou substitui caracteres inválidos para uso em filename."""
+    return "".join(c if c not in _CHARS_INVALID else "" for c in nome).strip().replace(" ", "_")
 
 FONTES = {
     "tamanho_titulo": 20,  # Mantido
@@ -240,7 +240,7 @@ def _criar_estilos(fonte_normal: str, fonte_bold: str) -> dict:
             parent=base["Normal"],
             fontName=fonte_bold,
             fontSize=11,
-            textColor=CORES["azul_contratado"],
+            textColor=colors.black,
             alignment=TA_CENTER,
         ),
         "TabelaValorAzulClaro": ParagraphStyle(
@@ -352,26 +352,52 @@ def _texto(valor: Any, padrao: str = "") -> str:
 # COMPONENTES DE LAYOUT
 # ============================================
 
-def _build_cabecalho(obra: Any, estilos: dict, fonte_bold: str, base: Any) -> list:
+def _build_cabecalho(obra: Any, estilos: dict, fonte_bold: str, base: Any, logo_path: str = "") -> list:
     """Constroi cabecalho com titulo e informacoes basicas.
     
     Layout:
-    - Titulo centralizado
+    - Logo (centralizado)
+    - RELATORIO DA OBRA (centralizado, 14pt) logo abaixo
     - Subtitulo centralizado
     - Emissao (data) centralizada, negrito, fonte 11pt
     - Tabela de informacoes com labels em negrito/maiusculo/fonte 10pt
     """
     elementos = []
     
-    # Titulo principal (centralizado)
-    elementos.append(Paragraph("RELATORIO DA OBRA", estilos["Titulo"]))
-    
-    # Subtitulo com nome da obra (centralizado)
-    elementos.append(Paragraph(_texto(obra.nome, "Obra sem nome"), estilos["Subtitulo"]))
+    logo_estilo_14 = ParagraphStyle(
+        name="LogoTitulo12",
+        parent=base["Normal"],
+        fontName=fonte_bold,
+        fontSize=12,
+        textColor=CORES["texto_escuro"],
+        alignment=TA_CENTER,
+        spaceAfter=4,
+    )
+
+    if logo_path and Path(logo_path).exists():
+        # Logo centralizado
+        img = Image(logo_path)
+        img.drawWidth = 3.6 * cm
+        img.drawHeight = 3.6 * cm
+        img_table = Table([[img]], colWidths=[3.6 * cm])
+        img_table.setStyle(TableStyle([
+            ("ALIGN", (0, 0), (0, 0), "CENTER"),
+            ("VALIGN", (0, 0), (0, 0), "MIDDLE"),
+        ]))
+        elementos.append(img_table)
+        elementos.append(Spacer(1, 6))
+        
+        # Titulo 14pt embaixo do logo
+        elementos.append(Paragraph("RELATORIO DA OBRA", logo_estilo_14))
+        elementos.append(Paragraph(_texto(obra.nome, "Obra sem nome"), estilos["Subtitulo"]))
+    else:
+        # Sem logo: titulo e subtitulo centralizados normalmente
+        elementos.append(Paragraph("RELATORIO DA OBRA", estilos["Titulo"]))
+        elementos.append(Paragraph(_texto(obra.nome, "Obra sem nome"), estilos["Subtitulo"]))
     
     # Emissao (data) - centralizada, negrito, fonte maior
     elementos.append(Paragraph(
-        f"Emissao: {datetime.now().strftime('%d/%m/%Y')}",
+        f"Emissão: {datetime.now().strftime('%d/%m/%Y')}",
         estilos["Emissao"]
     ))
     
@@ -391,13 +417,13 @@ def _build_cabecalho(obra: Any, estilos: dict, fonte_bold: str, base: Any) -> li
             Paragraph("CÓDIGO:", estilos["Texto"]),
             Paragraph(_texto(obra.codigo).upper(), info_valor_style),
             Paragraph("CLIENTE:", estilos["Texto"]),
-            Paragraph(_texto(obra.cliente_contratante, 'Nao informado').upper(), info_valor_style),
+            Paragraph(_texto(obra.cliente_contratante, 'Não informado').upper(), info_valor_style),
         ],
         [
             Paragraph("LOCAL:", estilos["Texto"]),
-            Paragraph(_texto(obra.local_obra, 'Nao informado').upper(), info_valor_style),
-            Paragraph("ENGENHEIRO:", estilos["Texto"]),
-            Paragraph(_texto(obra.engenheiro_responsavel, 'Nao informado').upper(), info_valor_style),
+            Paragraph(_texto(obra.local_obra, 'Não informado').upper(), info_valor_style),
+            Paragraph("RESPONSÁVEL:", estilos["Texto"]),
+            Paragraph(_texto(obra.engenheiro_responsavel, 'Não informado').upper(), info_valor_style),
         ],
     ]
     info_table = Table(info_data, colWidths=[LARGURA_UTIL / 4, LARGURA_UTIL / 4, LARGURA_UTIL / 4, LARGURA_UTIL / 4])
@@ -767,11 +793,21 @@ class ReportLabPDFService:
         lancamentos = self._lancamento_service.listar_por_obra(obra_id)
         anexos = self._anexo_service.listar_por_obra(obra_id)
 
+        # Obter logo da empresa
+        logo_path = ""
+        try:
+            empresa = self._empresa_service.obter()
+            if empresa:
+                logo_path = getattr(empresa, "logo_path", "")
+        except Exception:
+            pass
+
         # Configurar arquivo na pasta Downloads
         downloads_dir = Path.home() / "Downloads"
         downloads_dir.mkdir(exist_ok=True)
         
-        filename = f"relatorio_obra_{obra.codigo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        nome_sanitized = _sanitizar_para_filename(obra.nome)
+        filename = f"relatorio_{nome_sanitized}_{obra.codigo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         filepath = downloads_dir / filename
         
         print(f"[PDF] Arquivo: {filepath}")
@@ -795,7 +831,7 @@ class ReportLabPDFService:
         elementos = []
         
         # 1. Cabecalho
-        elementos.extend(_build_cabecalho(obra, estilos, fonte_bold, base))
+        elementos.extend(_build_cabecalho(obra, estilos, fonte_bold, base, logo_path))
         
         # 2. Resumo financeiro
         elementos.extend(_build_resumo_financeiro(resumo, estilos))
@@ -805,14 +841,14 @@ class ReportLabPDFService:
             aditivos_data = [
                 [
                     _formatar_data(a.data_aditivo),
-                    _texto(a.descricao, "Sem descricao").upper(),
+                    _texto(a.descricao, "Sem descrição").upper(),
                     _formatar_moeda(a.valor),
                 ]
                 for a in aditivos
             ]
             elementos.extend(_build_tabela_padrao(
                 titulo="ADITIVOS",
-                colunas=["Data", "Descricao", "Valor"],
+                colunas=["Data", "Descrição", "Valor"],
                 dados=aditivos_data,
                 larguras_colunas=[0.20, 0.55, 0.25],
                 estilos=estilos,
@@ -836,15 +872,15 @@ class ReportLabPDFService:
                 lancamentos_data = [
                     [
                         _formatar_data(l.data_lancamento),
-                        _texto(l.descricao, "Sem descricao").upper(),
-                        _texto(l.tipo_nome, "Nao informado"),
+                        _texto(l.descricao, "Sem descrição").upper(),
+                        _texto(l.tipo_nome, "Não informado"),
                         _formatar_moeda(l.valor_total),
                     ]
                     for l in lancamentos_validos
                 ]
                 elementos.extend(_build_tabela_padrao(
                     titulo="LANCAMENTOS",
-                    colunas=["Data", "Descricao", "Tipo", "Valor"],
+                    colunas=["Data", "Descrição", "Tipo", "Valor"],
                     dados=lancamentos_data,
                     larguras_colunas=[0.15, 0.40, 0.20, 0.25],
                     estilos=estilos,

@@ -163,7 +163,7 @@ def criar_lancamentos(
         {
             "data": datetime(2024, 3, 20).date(),
             "descricao": "Serviços de terraplanagem e compactação de solo - Locação de equipamento",
-            "tipo": "SERVICO",
+            "tipo": "OUTROS",
             "valor": Decimal("23000.00"),
         },
         {

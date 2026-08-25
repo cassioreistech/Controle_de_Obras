@@ -227,6 +227,24 @@ class AppContainer(QMainWindow):
         self.combo_obras.setStyleSheet(get_combo_header_style())
         center_layout.addWidget(self.combo_obras)
 
+        self.btn_limpar_obra = QPushButton("✕")
+        self.btn_limpar_obra.setToolTip("Limpar seleção de obra")
+        self.btn_limpar_obra.setStyleSheet(f"""
+            QPushButton {{
+                padding: 6px 12px;
+                background-color: rgba(255,255,255,0.15);
+                color: white;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background-color: rgba(220,38,38,0.8);
+            }}
+        """)
+        self.btn_limpar_obra.clicked.connect(self._limpar_selecao_obra)
+        center_layout.addWidget(self.btn_limpar_obra)
+
         main_layout.addLayout(center_layout)
 
         main_layout.addStretch(1)
@@ -277,6 +295,13 @@ class AppContainer(QMainWindow):
             texto = f"{obra.codigo} - {obra.nome}".upper()
             self.combo_obras.addItem(texto, obra.id)
         self.combo_obras.blockSignals(False)
+
+    def _limpar_selecao_obra(self) -> None:
+        self.combo_obras.blockSignals(True)
+        self.combo_obras.setCurrentIndex(-1)
+        self.combo_obras.blockSignals(False)
+        self.set_obra_ativa(None)
+        self.show_obras_list()
 
     def _obra_selecionada(self, index: int) -> None:
         if index < 0:
@@ -436,6 +461,7 @@ class AppContainer(QMainWindow):
         from PySide6.QtWidgets import QFormLayout, QLineEdit, QMessageBox
 
         empresa = self.empresa_service.obter()
+        self._logo_path_temp = empresa.logo_path if empresa else ""
 
         dialog = QDialog(self)
         dialog.setWindowTitle("Configurações")
@@ -483,6 +509,23 @@ class AppContainer(QMainWindow):
         self.input_responsavel_config = QLineEdit(empresa.responsavel if empresa else "")
         form_layout.addRow("Responsável:", self.input_responsavel_config)
 
+        # Logo da empresa
+        logo_layout = QHBoxLayout()
+        self.lbl_logo_path = QLabel(empresa.logo_path if empresa and empresa.logo_path else "Nenhum logo selecionado")
+        self.lbl_logo_path.setStyleSheet("font-size: 11px; color: #6B7280;")
+        self.lbl_logo_path.setWordWrap(True)
+        logo_layout.addWidget(self.lbl_logo_path, 1)
+
+        btn_logo = QPushButton("Selecionar Logo")
+        btn_logo.clicked.connect(self._selecionar_logo)
+        logo_layout.addWidget(btn_logo)
+
+        btn_remover_logo = QPushButton("Remover")
+        btn_remover_logo.clicked.connect(self._remover_logo)
+        logo_layout.addWidget(btn_remover_logo)
+
+        form_layout.addRow("Logo (PDF):", logo_layout)
+
         layout.addLayout(form_layout)
 
         # Seção: Informações do Software
@@ -527,6 +570,19 @@ class AppContainer(QMainWindow):
 
         dialog.exec()
 
+    def _selecionar_logo(self) -> None:
+        from PySide6.QtWidgets import QFileDialog
+        caminho, _ = QFileDialog.getOpenFileName(
+            self, "Selecionar Logo", "", "Imagens (*.png *.jpg *.jpeg *.bmp *.svg)"
+        )
+        if caminho:
+            self._logo_path_temp = caminho
+            self.lbl_logo_path.setText(caminho)
+
+    def _remover_logo(self) -> None:
+        self._logo_path_temp = ""
+        self.lbl_logo_path.setText("Nenhum logo selecionado")
+
     def _salvar_configuracoes(self, dialog: QDialog) -> None:
         from PySide6.QtWidgets import QMessageBox
 
@@ -551,6 +607,21 @@ class AppContainer(QMainWindow):
             empresa.cidade = self.input_cidade_config.text().strip()
             empresa.uf = self.input_uf_config.text().strip()
             empresa.responsavel = self.input_responsavel_config.text().strip()
+
+            # Atualizar logo se foi selecionado/removido
+            if hasattr(self, "_logo_path_temp") and self._logo_path_temp:
+                import shutil
+                src = Path(self._logo_path_temp)
+                if src.exists():
+                    dest_dir = self.storage.logos_dir
+                    dest_dir.mkdir(parents=True, exist_ok=True)
+                    dest = dest_dir / f"logo{src.suffix}"
+                    shutil.copy2(src, dest)
+                    empresa.logo_path = str(dest)
+                else:
+                    empresa.logo_path = self._logo_path_temp
+            elif hasattr(self, "_logo_path_temp") and not self._logo_path_temp:
+                empresa.logo_path = ""
 
             self.empresa_service.salvar(empresa)
 

@@ -403,7 +403,7 @@ class DocxReportService:
         info_table.cell(0, 0).text = f"Código: {_texto(obra.codigo)}"
         info_table.cell(0, 1).text = f"Cliente: {_texto(obra.cliente_contratante, 'Não informado')}"
         info_table.cell(1, 0).text = f"Local: {_texto(obra.local_obra, 'Não informado')}"
-        info_table.cell(1, 1).text = f"Engenheiro: {_texto(obra.engenheiro_responsavel, 'Não informado')}"
+        info_table.cell(1, 1).text = f"Responsável: {_texto(obra.engenheiro_responsavel, 'Não informado')}"
         
         for row in info_table.rows:
             for cell in row.cells:

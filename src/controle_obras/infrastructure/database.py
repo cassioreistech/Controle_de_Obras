@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS empresa (
     cidade TEXT,
     uf TEXT,
     responsavel TEXT,
+    logo_path TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -115,10 +116,33 @@ CREATE TABLE IF NOT EXISTS configuracoes (
 
 INSERT OR IGNORE INTO tipos_lancamento (nome, ordem_exibicao) VALUES
     ('Material', 1),
-    ('Servico', 2),
-    ('Mao de obra', 3),
-    ('Manutencao', 4),
-    ('Outros', 5);
+    ('Mao de obra', 2),
+    ('Manutencao', 3),
+    ('Outros', 4);
+
+-- Desativa tipo removido (Servico) e suas variantes
+UPDATE tipos_lancamento SET ativo = 0, ordem_exibicao = 99 WHERE LOWER(nome) LIKE '%servi%';
+
+-- Desativa variantes com acento (mantendo apenas os nomes canonicos acima)
+UPDATE tipos_lancamento SET ativo = 0, ordem_exibicao = 99
+WHERE nome IN ('Mao de obra', 'Manutencao')
+AND id NOT IN (
+    SELECT MIN(id) FROM tipos_lancamento
+    WHERE nome IN ('Mao de obra', 'Manutencao')
+);
+
+-- Limpa duplicatas restantes (mantendo menor id por nome)
+DELETE FROM tipos_lancamento
+WHERE ativo = 0 AND id NOT IN (
+    SELECT MIN(id) FROM tipos_lancamento WHERE ativo = 0 GROUP BY nome
+);
+
+-- Migracao de origens antigas para novas (compatibilidade DB existente)
+UPDATE lancamentos SET origem_informacao = 'Outros'
+WHERE origem_informacao IN ('Cupom', 'Nota geral');
+
+UPDATE lancamentos SET origem_informacao = 'Planilha orçamentária'
+WHERE origem_informacao IN ('Planilha de diretoria', 'Planilha de engenharia');
 """
 
 
@@ -148,6 +172,22 @@ class DatabaseManager:
     def init_schema(self) -> None:
         with self.get_connection() as conn:
             conn.executescript(SCHEMA_SQL)
+            self._run_migrations(conn)
+
+    def _run_migrations(self, conn: sqlite3.Connection) -> None:
+        """Executa migracoes para bancos existentes."""
+        try:
+            # Checa se coluna logo_path ja existe na tabela empresa
+            has_logo = False
+            for col in conn.execute("PRAGMA table_info(empresa)"):
+                if col[1] == "logo_path":
+                    has_logo = True
+                    break
+                    
+            if not has_logo:
+                conn.execute("ALTER TABLE empresa ADD COLUMN logo_path TEXT DEFAULT ''")
+        except Exception:
+            pass
 
     def execute(
         self, sql: str, params: tuple[Any, ...] | dict[str, Any] | None = None

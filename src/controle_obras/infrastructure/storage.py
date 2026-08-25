@@ -14,6 +14,7 @@ class AppStorage:
         self.anexos_dir = self.storage_dir / "anexos"
         self.reports_dir = self.base_dir / "reports"
         self.obras_reports_dir = self.reports_dir / "obras"
+        self.logos_dir = self.storage_dir / "logos"
 
         self._ensure_dirs()
 
@@ -23,6 +24,7 @@ class AppStorage:
             self.storage_dir,
             self.anexos_dir,
             self.obras_reports_dir,
+            self.logos_dir,
         ):
             directory.mkdir(parents=True, exist_ok=True)
 

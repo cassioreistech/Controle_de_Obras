@@ -19,6 +19,7 @@ class Empresa:
     cidade: str = ""
     uf: str = ""
     responsavel: str = ""
+    logo_path: str = ""
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 

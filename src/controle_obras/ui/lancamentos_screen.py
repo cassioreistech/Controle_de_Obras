@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import unicodedata
 from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -56,8 +57,8 @@ from controle_obras.ui.styles import (
 
 
 ORIGENS_COM_ANEXO_OBRIGATORIO = {
-    "Planilha de diretoria",
-    "Planilha de engenharia",
+    "Planilha orçamentária",
+    "Nota Fiscal",
 }
 
 
@@ -146,7 +147,7 @@ class LancamentosScreen(QWidget):
 
         self.input_origem = QComboBox()
         self.input_origem.addItems(
-            ["Manual", "Planilha de diretoria", "Planilha de engenharia", "Nota geral", "Cupom"]
+            ["Manual", "Planilha orçamentária", "Nota Fiscal", "Outros"]
         )
         self.input_origem.currentTextChanged.connect(self._origem_alterada)
         self.input_origem.setStyleSheet(input_style)
@@ -330,11 +331,19 @@ class LancamentosScreen(QWidget):
         self._arquivo_anexo = None
         self._atualizar_label_anexo()
 
+    def _normalizar_nome(self, nome: str) -> str:
+        """Remove acentos e padroniza para comparacao."""
+        return unicodedata.normalize("NFD", nome).encode("ascii", "ignore").decode("ascii").lower().strip()
+
     def _carregar_tipos(self) -> None:
         self.input_tipo.clear()
+        vistos = set()
         tipos = self._parent.tipo_lancamento_service.listar_ativos()
         for tipo in tipos:
-            self.input_tipo.addItem(tipo.nome, tipo.id)
+            nome_norm = self._normalizar_nome(tipo.nome)
+            if nome_norm not in vistos:
+                vistos.add(nome_norm)
+                self.input_tipo.addItem(tipo.nome, tipo.id)
 
     def _carregar_lancamentos(self) -> None:
         if self._obra_id is None:

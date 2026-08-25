@@ -66,6 +66,10 @@ class EmpresaScreen(QWidget):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
 
+        btn_limpar = QPushButton("Limpar")
+        btn_limpar.clicked.connect(self._limpar)
+        btn_layout.addWidget(btn_limpar)
+
         btn_salvar = QPushButton("Salvar e Continuar")
         btn_salvar.setStyleSheet(
             "padding: 10px 24px; background-color: #27ae60; color: white;"
@@ -88,6 +92,17 @@ class EmpresaScreen(QWidget):
             self.input_cidade.setText(empresa.cidade)
             self.input_uf.setText(empresa.uf)
             self.input_responsavel.setText(empresa.responsavel)
+
+    def _limpar(self) -> None:
+        self.input_razao.clear()
+        self.input_fantasia.clear()
+        self.input_cnpj.clear()
+        self.input_telefone.clear()
+        self.input_email.clear()
+        self.input_endereco.clear()
+        self.input_cidade.clear()
+        self.input_uf.clear()
+        self.input_responsavel.clear()
 
     def _salvar(self) -> None:
         razao = self.input_razao.text().strip()

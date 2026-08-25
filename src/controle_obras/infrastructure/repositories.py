@@ -55,37 +55,53 @@ class EmpresaRepository(BaseRepository[Empresa]):
             "cidade": empresa.cidade,
             "uf": empresa.uf,
             "responsavel": empresa.responsavel,
+            "logo_path": empresa.logo_path,
             "updated_at": datetime.now().isoformat(),
         }
 
+        columns = "razao_social, nome_fantasia, cnpj, telefone, email, endereco, cidade, uf, responsavel, logo_path"
+        update_set = "razao_social=:razao_social, nome_fantasia=:nome_fantasia, cnpj=:cnpj, telefone=:telefone, email=:email, endereco=:endereco, cidade=:cidade, uf=:uf, responsavel=:responsavel, logo_path=:logo_path, updated_at=:updated_at"
+
         with self._db.get_connection() as conn:
             if empresa.id:
-                conn.execute(
-                    """
-                    UPDATE empresa SET razao_social=:razao_social, nome_fantasia=:nome_fantasia,
-                        cnpj=:cnpj, telefone=:telefone, email=:email, endereco=:endereco,
-                        cidade=:cidade, uf=:uf, responsavel=:responsavel, updated_at=:updated_at
-                    WHERE id=:id
-                    """,
-                    {**data, "id": empresa.id},
-                )
+                try:
+                    conn.execute(
+                        f"UPDATE empresa SET {update_set} WHERE id=:id",
+                        {**data, "id": empresa.id},
+                    )
+                except sqlite3.OperationalError:
+                    # Fallback para bancos antigos sem logo_path
+                    conn.execute(
+                        "UPDATE empresa SET razao_social=:razao_social, nome_fantasia=:nome_fantasia, cnpj=:cnpj, telefone=:telefone, email=:email, endereco=:endereco, cidade=:cidade, uf=:uf, responsavel=:responsavel, updated_at=:updated_at WHERE id=:id",
+                        data,
+                    )
             else:
-                cursor = conn.execute(
-                    """
-                    INSERT INTO empresa (razao_social, nome_fantasia, cnpj, telefone, email,
-                        endereco, cidade, uf, responsavel, updated_at)
-                    VALUES (:razao_social, :nome_fantasia, :cnpj, :telefone, :email,
-                        :endereco, :cidade, :uf, :responsavel, :updated_at)
-                    """,
-                    data,
-                )
-                empresa.id = cursor.lastrowid
+                try:
+                    cursor = conn.execute(
+                        f"INSERT INTO empresa ({columns}, updated_at) VALUES (:razao_social, :nome_fantasia, :cnpj, :telefone, :email, :endereco, :cidade, :uf, :responsavel, :logo_path, :updated_at)",
+                        data,
+                    )
+                    empresa.id = cursor.lastrowid
+                except sqlite3.OperationalError:
+                    # Fallback para bancos antigos sem logo_path
+                    cursor = conn.execute(
+                        "INSERT INTO empresa (razao_social, nome_fantasia, cnpj, telefone, email, endereco, cidade, uf, responsavel, updated_at) VALUES (:razao_social, :nome_fantasia, :cnpj, :telefone, :email, :endereco, :cidade, :uf, :responsavel, :updated_at)",
+                        data,
+                    )
+                    empresa.id = cursor.lastrowid
         return empresa
 
     def get(self) -> Empresa | None:
         row = self._db.execute("SELECT * FROM empresa LIMIT 1").fetchone()
         if not row:
             return None
+
+        # Handle legacy databases without logo_path column
+        try:
+            logo_path = row["logo_path"] or ""
+        except (IndexError, KeyError):
+            logo_path = ""
+
         return Empresa(
             id=row["id"],
             razao_social=row["razao_social"],
@@ -97,6 +113,7 @@ class EmpresaRepository(BaseRepository[Empresa]):
             cidade=row["cidade"],
             uf=row["uf"],
             responsavel=row["responsavel"],
+            logo_path=logo_path,
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
         )
