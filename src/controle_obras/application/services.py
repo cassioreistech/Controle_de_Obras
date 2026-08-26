@@ -323,6 +323,11 @@ class RelatorioPDFService:
         self._relatorio_repo = relatorio_repo
         self._storage = storage
         self._empresa_service = empresa_service
+        self._licenca_chave = ""
+
+    def set_licenca(self, chave: str) -> None:
+        """Define a chave de licenca para marcar os PDFs gerados (rastreabilidade)."""
+        self._licenca_chave = chave.strip().upper()
 
     def _obter_responsavel(self) -> str:
         """Obtem o nome do responsavel legal da empresa."""
@@ -372,6 +377,7 @@ class RelatorioPDFService:
             storage=self._storage,
             empresa_service=self._empresa_service,
         )
+        rl_service.set_licenca(self._licenca_chave)
 
         return rl_service.gerar_relatorio_obra_reportlab(obra_id)
 

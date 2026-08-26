@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "controle-obras"
-version = "1.0.0"
+version = "1.0.1"
 description = "Sistema desktop para controle financeiro e operacional de obras"
 readme = "README.md"
 requires-python = ">=3.10"
