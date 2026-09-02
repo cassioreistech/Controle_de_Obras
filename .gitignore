@@ -10,6 +10,7 @@ __pycache__/
 tests/ui/screenshots/
 build/
 dist/
+installer/
 *.spec.bak
 data/app.db
 data/app.log

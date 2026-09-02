@@ -806,8 +806,9 @@ class ReportLabPDFService:
         downloads_dir = Path.home() / "Downloads"
         downloads_dir.mkdir(exist_ok=True)
         
-        nome_sanitized = _sanitizar_para_filename(obra.nome)
-        filename = f"relatorio_{nome_sanitized}_{obra.codigo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        nome_sanitized = _sanitizar_para_filename(_texto(obra.nome, "Obra"))
+        codigo_sanitized = _sanitizar_para_filename(_texto(obra.codigo, "SEM_CODIGO")) or "SEM_CODIGO"
+        filename = f"relatorio_{nome_sanitized}_{codigo_sanitized}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         filepath = downloads_dir / filename
         
         print(f"[PDF] Arquivo: {filepath}")

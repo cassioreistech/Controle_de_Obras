@@ -28,6 +28,14 @@ def _formatar_data(valor: Any) -> str:
     return str(valor)
 
 
+def _sanitizar_para_filename(nome: str) -> str:
+    """Remove ou substitui caracteres invalidos para uso em filename."""
+    if not nome:
+        return "SEM_CODIGO"
+    return "".join(c if c not in '<>:"/\\|?*' else "" for c in nome).strip().replace(" ", "_")
+
+
+
 def _formatar_moeda(valor: Decimal) -> str:
     """Formata valor monetário para R$ 1.234,56."""
     fmt = f"{float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -447,8 +455,10 @@ class DocxReportService:
         self._adicionar_assinatura(doc, responsavel, cnpj)
         
         # Salvar DOCX temporário
-        filename = f"relatorio_obra_{obra.codigo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+        codigo_sanitized = _sanitizar_para_filename(_texto(obra.codigo, ""))
+        filename = f"relatorio_obra_{codigo_sanitized}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
         docx_path = self._storage.relatorio_path(filename)
+        docx_path.parent.mkdir(parents=True, exist_ok=True)
         doc.save(str(docx_path))
         print(f"[DOCX] DOCX: {docx_path}")
         
