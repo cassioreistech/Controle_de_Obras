@@ -1,9 +1,13 @@
 """Ponto de entrada da aplicação Controle de Obras."""
 
+import os
 import logging
 import sys
 import traceback
 from pathlib import Path
+
+if not getattr(sys, "frozen", False):
+    os.environ.setdefault("CONTROLE_OBRAS_DEV", "1")
 
 from PySide6.QtCore import QLockFile
 from PySide6.QtWidgets import QApplication, QMessageBox

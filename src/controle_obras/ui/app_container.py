@@ -1,5 +1,7 @@
 """Container principal da aplicação com navegação por páginas."""
 
+from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
@@ -80,8 +82,6 @@ class AppContainer(QMainWindow):
 
     @staticmethod
     def _carregar_icone() -> QIcon:
-        from pathlib import Path
-
         import sys as _sys
 
         # Caminho do asset no empacotado (PyInstaller) ou em dev
@@ -100,7 +100,15 @@ class AppContainer(QMainWindow):
             self.relatorio_service.set_licenca(config.valor)
 
     def verificar_licenca(self) -> bool:
-        """Valida trial/chave no startup. Retorna False se deve fechar o app."""
+        """Valida trial/chave no startup. Retorna False se deve fechar o app.
+
+        Em modo desenvolvimento (CONTROLE_OBRAS_DEV=1), pula a verificacao.
+        """
+        import os
+
+        if os.environ.get("CONTROLE_OBRAS_DEV") == "1":
+            return True
+
         status = self.licenca_service.verificar()
 
         if status.tipo == "LICENCIADO":

@@ -131,6 +131,7 @@ class DashboardScreen(QWidget):
 
         botoes = [
             ("+ Aditivo", INFO, INFO_HOVER, self._novo_aditivo),
+            ("Ver Aditivos", INFO, INFO_HOVER, self._ver_aditivos),
             ("+ Lançamento", SUCCESS, SUCCESS_HOVER, self._novo_lancamento),
             ("+ Anexo", WARNING, WARNING_HOVER, self._novo_anexo),
             ("Gerar PDF", BROWN, BROWN_HOVER, self._gerar_pdf),
@@ -500,8 +501,8 @@ class DashboardScreen(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
 
         table = QTableWidget()
-        table.setColumnCount(5)
-        table.setHorizontalHeaderLabels(["Data", "Descrição", "Valor", "Observações", ""])
+        table.setColumnCount(6)
+        table.setHorizontalHeaderLabels(["Data", "Descrição", "Valor", "Observações", "", ""])
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
@@ -513,6 +514,7 @@ class DashboardScreen(QWidget):
         table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
         table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
+        table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
         table.setStyleSheet(get_table_style(INFO))
 
         aditivos = self._parent.aditivo_service.listar_por_obra(self._obra_id)
@@ -549,24 +551,78 @@ class DashboardScreen(QWidget):
             item_obs.setFont(font_obs)
             table.setItem(row, 3, item_obs)
 
-            btn_excluir = QPushButton("🗑️")
-            btn_excluir.setToolTip("Excluir aditivo")
-            btn_excluir.setStyleSheet(f"""
+            from PySide6.QtGui import QIcon, QPainter, QPixmap
+            from PySide6.QtSvg import QSvgRenderer
+
+            btn_editar = QPushButton()
+            btn_editar.setToolTip("Editar aditivo")
+            btn_editar.setFixedSize(30, 30)
+            btn_editar.setCursor(Qt.CursorShape.PointingHandCursor)
+
+            svg_editar = '''
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+            '''
+
+            pixmap = QPixmap(16, 16)
+            pixmap.fill(Qt.GlobalColor.transparent)
+            renderer = QSvgRenderer(svg_editar.encode())
+            painter = QPainter(pixmap)
+            renderer.render(painter)
+            painter.end()
+            btn_editar.setIcon(QIcon(pixmap))
+            btn_editar.setIconSize(pixmap.rect().size())
+
+            btn_editar.setStyleSheet(f"""
                 QPushButton {{
-                    padding: 4px 8px;
-                    background-color: transparent;
-                    color: {DANGER};
+                    background-color: {INFO};
                     border: none;
-                    border-radius: 3px;
-                    font-size: 14px;
+                    border-radius: 6px;
                 }}
                 QPushButton:hover {{
-                    background-color: {DANGER_LIGHT};
+                    background-color: {INFO_HOVER};
                 }}
             """)
+            btn_editar.clicked.connect(lambda checked, aid=adit.id: self._editar_aditivo_dialog(aid, dialog))
+            table.setCellWidget(row, 4, btn_editar)
+
+            btn_excluir = QPushButton()
+            btn_excluir.setToolTip("Excluir aditivo")
+            btn_excluir.setFixedSize(30, 30)
             btn_excluir.setCursor(Qt.CursorShape.PointingHandCursor)
+
+            svg_excluir = '''
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+            '''
+
+            pixmap = QPixmap(16, 16)
+            pixmap.fill(Qt.GlobalColor.transparent)
+            renderer = QSvgRenderer(svg_excluir.encode())
+            painter = QPainter(pixmap)
+            renderer.render(painter)
+            painter.end()
+            btn_excluir.setIcon(QIcon(pixmap))
+            btn_excluir.setIconSize(pixmap.rect().size())
+
+            btn_excluir.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {DANGER};
+                    border: none;
+                    border-radius: 6px;
+                }}
+                QPushButton:hover {{
+                    background-color: {DANGER_HOVER};
+                }}
+            """)
             btn_excluir.clicked.connect(lambda checked, aid=adit.id: self._excluir_aditivo_dialog(aid, dialog))
-            table.setCellWidget(row, 4, btn_excluir)
+            table.setCellWidget(row, 5, btn_excluir)
 
         layout.addWidget(table)
 
@@ -589,3 +645,81 @@ class DashboardScreen(QWidget):
             self._parent.aditivo_service.excluir(aditivo_id)
             dialog.accept()
             self.carregar(self._obra_id)
+
+    def _editar_aditivo_dialog(self, aditivo_id: int, dialog: QDialog) -> None:
+        aditivos = self._parent.aditivo_service.listar_por_obra(self._obra_id)
+        aditivo = next((a for a in aditivos if a.id == aditivo_id), None)
+        if aditivo is None:
+            return
+
+        edit_dialog = QDialog(dialog)
+        edit_dialog.setWindowTitle("Editar Aditivo")
+        edit_dialog.setMinimumWidth(450)
+        edit_dialog.setStyleSheet(f"""
+            QDialog {{
+                background-color: {BACKGROUND};
+            }}
+            QLabel {{
+                font-size: 13px;
+                color: {TEXT_PRIMARY};
+            }}
+            QLineEdit, QDateEdit {{
+                {get_input_style()}
+            }}
+        """)
+
+        form = QFormLayout(edit_dialog)
+        form.setSpacing(12)
+        form.setContentsMargins(24, 24, 24, 24)
+
+        input_data = QDateEdit()
+        input_data.setCalendarPopup(True)
+        input_data.setDate(aditivo.data_aditivo)
+        form.addRow("Data:", input_data)
+
+        input_desc = QLineEdit(aditivo.descricao or "")
+        input_desc.setPlaceholderText("Descrição do aditivo")
+        form.addRow("Descrição:", input_desc)
+
+        input_valor = QLineEdit(f"{aditivo.valor:.2f}" if aditivo.valor else "")
+        input_valor.setPlaceholderText("0,00")
+        form.addRow("Valor (R$):", input_valor)
+
+        input_obs = QLineEdit(aditivo.observacoes or "")
+        input_obs.setPlaceholderText("Observações opcionais")
+        form.addRow("Observações:", input_obs)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(edit_dialog.accept)
+        buttons.rejected.connect(edit_dialog.reject)
+
+        btn_ok = buttons.button(QDialogButtonBox.StandardButton.Ok)
+        btn_ok.setStyleSheet(get_action_button_style(SUCCESS, SUCCESS_HOVER))
+        btn_cancel = buttons.button(QDialogButtonBox.StandardButton.Cancel)
+        btn_cancel.setStyleSheet(get_action_button_style(TEXT_SECONDARY, TEXT_MUTED))
+
+        form.addRow(buttons)
+
+        if edit_dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        descricao = input_desc.text().strip()
+        if not descricao:
+            QMessageBox.warning(self, "Validação", "Descrição é obrigatória.")
+            return
+
+        valor_text = input_valor.text().strip().replace("R$", "").replace(".", "").replace(",", ".").strip()
+        try:
+            valor = float(valor_text) if valor_text else 0.0
+        except ValueError:
+            QMessageBox.warning(self, "Validação", "Valor inválido.")
+            return
+
+        aditivo.data_aditivo = input_data.date().toPython()
+        aditivo.descricao = descricao
+        aditivo.valor = Decimal(str(valor))
+        aditivo.observacoes = input_obs.text().strip()
+
+        self._parent.aditivo_service.salvar(aditivo)
+        dialog.accept()
+        self.carregar(self._obra_id)

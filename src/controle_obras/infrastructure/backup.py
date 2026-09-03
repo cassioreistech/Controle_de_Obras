@@ -298,6 +298,8 @@ class BackupService:
                 db_backup = tmp_path / "database" / "app.db"
                 self._restaurar_database(db_backup)
 
+                self.db.init_schema()
+
                 storage_backup = tmp_path / "storage" / "anexos"
                 if storage_backup.exists():
                     if self.storage.anexos_dir.exists():
