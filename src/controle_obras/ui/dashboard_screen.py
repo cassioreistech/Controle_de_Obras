@@ -45,8 +45,6 @@ from controle_obras.ui.styles import (
     INFO_HOVER,
     INFO_LIGHT,
     PRIMARY,
-    PRIMARY_HOVER,
-    PRIMARY_PRESSED,
     SUCCESS,
     SUCCESS_HOVER,
     SUCCESS_LIGHT,
@@ -58,11 +56,10 @@ from controle_obras.ui.styles import (
     WARNING,
     WARNING_HOVER,
     get_action_button_style,
-    get_card_style,
     get_input_style,
-    get_screen_title_style,
     get_table_style,
 )
+from controle_obras.ui.value_utils import formatar_valor, parse_valor
 
 
 class DashboardScreen(QWidget):
@@ -274,10 +271,10 @@ class DashboardScreen(QWidget):
 
         resumo = self._parent.resumo_service.calcular_resumo(obra_id)
 
-        self._update_card(self.card_contratado, f"R$ {resumo.valor_contratado:,.2f}")
-        self._update_card(self.card_aditivos, f"R$ {resumo.total_aditivos:,.2f}")
-        self._update_card(self.card_gasto, f"R$ {resumo.total_gasto:,.2f}")
-        self._update_card(self.card_liquido, f"R$ {resumo.valor_liquido:,.2f}")
+        self._update_card(self.card_contratado, f"R$ {formatar_valor(resumo.valor_contratado)}")
+        self._update_card(self.card_aditivos, f"R$ {formatar_valor(resumo.total_aditivos)}")
+        self._update_card(self.card_gasto, f"R$ {formatar_valor(resumo.total_gasto)}")
+        self._update_card(self.card_liquido, f"R$ {formatar_valor(resumo.valor_liquido)}")
 
         movimentos = []
 
@@ -329,7 +326,7 @@ class DashboardScreen(QWidget):
                 item_tipo.setFont(font)
             self.table_lancamentos.setItem(row, 2, item_tipo)
 
-            valor_item = QTableWidgetItem(f"R$ {mov['valor']:,.2f}")
+            valor_item = QTableWidgetItem(f"R$ {formatar_valor(mov['valor'])}")
             valor_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             font = valor_item.font()
             font.setBold(True)
@@ -416,10 +413,8 @@ class DashboardScreen(QWidget):
             QMessageBox.warning(self, "Validação", "Descrição é obrigatória.")
             return
 
-        valor_text = input_valor.text().strip().replace("R$", "").replace(".", "").replace(",", ".").strip()
-        try:
-            valor = float(valor_text) if valor_text else 0.0
-        except ValueError:
+        valor = parse_valor(input_valor.text())
+        if valor is None:
             QMessageBox.warning(self, "Validação", "Valor inválido.")
             return
 
@@ -457,31 +452,6 @@ class DashboardScreen(QWidget):
             )
         except Exception as e:
             QMessageBox.critical(self, "Erro", f"Falha ao gerar PDF:\n{str(e)}")
-
-    def _input_valor(self, title: str, label: str) -> tuple[float, bool]:
-        from PySide6.QtWidgets import QInputDialog
-
-        text, ok = QInputDialog.getText(self, title, label)
-        if not ok:
-            return 0.0, False
-        try:
-            return float(text.replace(".", "").replace(",", ".")), True
-        except ValueError:
-            QMessageBox.warning(self, "Validação", "Valor inválido.")
-            return 0.0, False
-
-    def _excluir_aditivo(self, aditivo_id: int) -> None:
-        if self._obra_id is None:
-            return
-        resposta = QMessageBox.question(
-            self,
-            "Confirmar Exclusão",
-            "Deseja realmente excluir este aditivo?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        )
-        if resposta == QMessageBox.StandardButton.Yes:
-            self._parent.aditivo_service.excluir(aditivo_id)
-            self.carregar(self._obra_id)
 
     def _ver_aditivos(self) -> None:
         if self._obra_id is None:
@@ -535,7 +505,7 @@ class DashboardScreen(QWidget):
             item_desc.setFont(font_desc)
             table.setItem(row, 1, item_desc)
 
-            valor_item = QTableWidgetItem(f"R$ {adit.valor:,.2f}")
+            valor_item = QTableWidgetItem(f"R$ {formatar_valor(adit.valor)}")
             valor_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             font = valor_item.font()
             font.setBold(True)
@@ -674,14 +644,15 @@ class DashboardScreen(QWidget):
 
         input_data = QDateEdit()
         input_data.setCalendarPopup(True)
-        input_data.setDate(aditivo.data_aditivo)
+        if aditivo.data_aditivo:
+            input_data.setDate(aditivo.data_aditivo)
         form.addRow("Data:", input_data)
 
         input_desc = QLineEdit(aditivo.descricao or "")
         input_desc.setPlaceholderText("Descrição do aditivo")
         form.addRow("Descrição:", input_desc)
 
-        input_valor = QLineEdit(f"{aditivo.valor:.2f}" if aditivo.valor else "")
+        input_valor = QLineEdit(formatar_valor(aditivo.valor) if aditivo.valor else "")
         input_valor.setPlaceholderText("0,00")
         form.addRow("Valor (R$):", input_valor)
 
@@ -708,10 +679,8 @@ class DashboardScreen(QWidget):
             QMessageBox.warning(self, "Validação", "Descrição é obrigatória.")
             return
 
-        valor_text = input_valor.text().strip().replace("R$", "").replace(".", "").replace(",", ".").strip()
-        try:
-            valor = float(valor_text) if valor_text else 0.0
-        except ValueError:
+        valor = parse_valor(input_valor.text())
+        if valor is None:
             QMessageBox.warning(self, "Validação", "Valor inválido.")
             return
 

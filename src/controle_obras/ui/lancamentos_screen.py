@@ -395,7 +395,7 @@ class LancamentosScreen(QWidget):
             item_origem.setFont(font_origem)
             self.table.setItem(row, 3, item_origem)
 
-            valor_item = QTableWidgetItem(f"R$ {lanc.valor_total:,.2f}")
+            valor_item = QTableWidgetItem(f"R$ {formatar_valor(lanc.valor_total)}")
             valor_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             font = valor_item.font()
             font.setBold(True)
@@ -680,8 +680,8 @@ class LancamentosScreen(QWidget):
         self.input_descricao.setText(lancamento.descricao)
         self.input_quantidade.setText(str(lancamento.quantidade) if lancamento.quantidade else "")
         self.input_unidade.setText(lancamento.unidade)
-        self.input_valor_unitario.setText(f"R$ {lancamento.valor_unitario:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if lancamento.valor_unitario else "")
-        self.input_valor_total.setText(f"R$ {lancamento.valor_total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        self.input_valor_unitario.setText(f"R$ {formatar_valor(lancamento.valor_unitario)}" if lancamento.valor_unitario else "")
+        self.input_valor_total.setText(f"R$ {formatar_valor(lancamento.valor_total)}")
 
         # Bloquear sinais do combo origem para não abrir dialog de anexo
         self.input_origem.blockSignals(True)

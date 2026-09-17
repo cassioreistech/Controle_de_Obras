@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 )
 
 from controle_obras.domain.models import Obra
+from controle_obras.ui.value_utils import formatar_valor
 
 if TYPE_CHECKING:
     from controle_obras.ui.app_container import AppContainer
@@ -167,7 +168,7 @@ class ObrasListScreen(QWidget):
             item_local.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self.table.setItem(row, 3, item_local)
 
-            valor_item = QTableWidgetItem(f"R$ {obra.valor_contratado_inicial:,.2f}")
+            valor_item = QTableWidgetItem(f"R$ {formatar_valor(obra.valor_contratado_inicial)}")
             valor_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             valor_item.setData(Qt.ItemDataRole.UserRole, float(obra.valor_contratado_inicial))
             font = valor_item.font()
