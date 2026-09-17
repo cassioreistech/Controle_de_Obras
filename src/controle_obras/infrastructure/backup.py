@@ -177,7 +177,7 @@ class BackupService:
         """Verifica que o arquivo ZIP foi criado corretamente e pode ser lido."""
         if not zipfile.is_zipfile(caminho_zip):
             raise BackupError("Arquivo de backup não é um ZIP válido.")
-        
+
         with zipfile.ZipFile(caminho_zip, "r") as zf:
             # Se bad_file() não levantar exceção, o ZIP é válido
             bad = zf.testzip()
@@ -186,11 +186,11 @@ class BackupService:
                     f"Arquivo dentro do backup está corrompido: {bad}\n"
                     f"O backup pode estar incompleto."
                 )
-            
+
             # Verificar que o arquivo crítico existe
             if "manifest.json" not in zf.namelist():
                 raise BackupError("Manifesto ausente no backup.")
-            
+
             if not any(n.startswith("database/app.db") for n in zf.namelist()):
                 raise BackupError("Banco de dados ausente no backup.")
 
@@ -221,7 +221,7 @@ class BackupService:
         backup_dir = self.storage.base_dir / "data" / "backups"
         backup_dir.mkdir(parents=True, exist_ok=True)
         hoje = datetime.now().strftime("%Y-%m-%d")
-        
+
         # Verificar se já existe backup diário de hoje (backups de segurança não contam)
         for bkp in backup_dir.iterdir():
             if (
@@ -233,7 +233,7 @@ class BackupService:
             ):
                 logger.info("Backup diário já existe: %s", bkp.name)
                 return None
-        
+
         # Criar backup silencioso
         return self.gerar_backup(
             nome_empresa=nome_empresa,
@@ -290,52 +290,88 @@ class BackupService:
         logger.info("Iniciando restauração de backup: %s", caminho_zip)
 
         with zipfile.ZipFile(caminho_zip, "r") as zf:
-            self._validar_estrutura_pacote(zf)
-            self._validar_membros_seguros(zf)
-            manifest = json.loads(zf.read("manifest.json"))
+            manifest_raw = zf.read("manifest.json") if "manifest.json" in zf.namelist() else None
+            if manifest_raw is None:
+                raise RestoreValidationError("Backup inválido: manifest.json ausente.")
+            manifest = json.loads(manifest_raw)
             self._validar_manifesto(manifest)
+            self._validar_membros_seguros(zf)
+            self._validar_estrutura_pacote(zf)
 
+            seguranca: Path | None = None
             if criar_backup_seguranca:
                 seguranca = self._criar_backup_seguranca()
                 logger.info("Backup de segurança criado: %s", seguranca)
 
             self._fechar_conexoes_sqlite()
 
-            with tempfile.TemporaryDirectory(prefix="controle_obras_restore_") as tmp:
-                tmp_path = Path(tmp)
-                zf.extractall(tmp_path)
+            try:
+                with tempfile.TemporaryDirectory(prefix="controle_obras_restore_") as tmp:
+                    tmp_path = Path(tmp)
+                    zf.extractall(tmp_path)
 
-                db_backup = tmp_path / "database" / "app.db"
-                self._validar_hash_database(manifest, db_backup)
-                self._restaurar_database(db_backup)
+                    db_backup = tmp_path / "database" / "app.db"
+                    self._validar_hash_database(manifest, db_backup)
+                    self._restaurar_database(db_backup)
+                    self.db.init_schema()
 
-                self.db.init_schema()
+                    self._substituir_diretorio(
+                        tmp_path / "storage" / "anexos", self.storage.anexos_dir
+                    )
+                    self._substituir_diretorio(
+                        tmp_path / "reports" / "obras", self.storage.obras_reports_dir
+                    )
+                    self._substituir_diretorio(
+                        tmp_path / "storage" / "logos", self.storage.logos_dir
+                    )
 
-                storage_backup = tmp_path / "storage" / "anexos"
-                if storage_backup.exists():
-                    if self.storage.anexos_dir.exists():
-                        shutil.rmtree(self.storage.anexos_dir)
-                    shutil.copytree(storage_backup, self.storage.anexos_dir)
+                    # Verificar se logo_path no DB aponta para arquivo antigo; se sim, atualizar
+                    self._verificar_logos()
 
-                reports_backup = tmp_path / "reports" / "obras"
-                if reports_backup.exists():
-                    if self.storage.obras_reports_dir.exists():
-                        shutil.rmtree(self.storage.obras_reports_dir)
-                    shutil.copytree(reports_backup, self.storage.obras_reports_dir)
-
-                logos_backup = tmp_path / "storage" / "logos"
-                if logos_backup.exists():
-                    if self.storage.logos_dir.exists():
-                        shutil.rmtree(self.storage.logos_dir)
-                    shutil.copytree(logos_backup, self.storage.logos_dir)
-
-                # Verificar se logo_path no DB aponta para arquivo antigo; se sim, atualizar
-                self._verificar_logos()
-
-                self._validar_pos_restauracao()
+                    self._validar_pos_restauracao()
+            except Exception as exc:
+                if seguranca is not None:
+                    logger.exception(
+                        "Falha na restauração; revertendo para o backup de segurança."
+                    )
+                    self._reverter_para_seguranca(seguranca)
+                raise exc
 
         logger.info("Restauração concluída com sucesso.")
         return manifest
+
+    def _substituir_diretorio(self, origem: Path, destino: Path) -> None:
+        """Substitui o conteúdo de um diretório de destino pela origem."""
+        if not origem.exists():
+            return
+        if destino.exists():
+            shutil.rmtree(destino)
+        shutil.copytree(origem, destino)
+
+    def _reverter_para_seguranca(self, caminho_seguranca: Path) -> None:
+        """Reverte banco, anexos, relatórios e logos para o estado pré-restore."""
+        logger.info("Revertendo restauração a partir de: %s", caminho_seguranca)
+        self._fechar_conexoes_sqlite()
+        with tempfile.TemporaryDirectory(prefix="controle_obras_rollback_") as tmp:
+            tmp_path = Path(tmp)
+            with zipfile.ZipFile(caminho_seguranca, "r") as zf:
+                zf.extractall(tmp_path)
+
+            db_origem = tmp_path / "database" / "app.db"
+            if db_origem.exists():
+                self._restaurar_database(db_origem)
+                self.db.init_schema()
+
+            self._substituir_diretorio(
+                tmp_path / "storage" / "anexos", self.storage.anexos_dir
+            )
+            self._substituir_diretorio(
+                tmp_path / "reports" / "obras", self.storage.obras_reports_dir
+            )
+            self._substituir_diretorio(
+                tmp_path / "storage" / "logos", self.storage.logos_dir
+            )
+        logger.info("Rollback pós-restauração concluído.")
 
     def _validar_estrutura_pacote(self, zf: zipfile.ZipFile) -> None:
         arquivos = zf.namelist()
@@ -374,7 +410,10 @@ class BackupService:
 
         if manifest.get("backup_version") != BACKUP_VERSION:
             versao = manifest.get("backup_version")
-            logger.warning("Versão de backup diferente: %s (esperado: %s)", versao, BACKUP_VERSION)
+            raise RestoreValidationError(
+                f"Versão de backup incompatível: {versao or 'desconhecida'} "
+                f"(suportada: {BACKUP_VERSION})."
+            )
 
     def _validar_hash_database(self, manifest: dict[str, Any], db_backup: Path) -> None:
         """Rejeita backup cujo banco não confere com o hash registrado no manifesto.
@@ -449,7 +488,7 @@ class BackupService:
                 )
 
             conn.execute("SELECT COUNT(*) FROM obras").fetchone()
-            
+
             # 4. Verificar integridade do banco restaurado
             result = conn.execute("PRAGMA integrity_check").fetchone()
             if result[0] != "ok":
@@ -492,29 +531,35 @@ class BackupService:
 
         self._fechar_conexoes_sqlite()
 
-        with zipfile.ZipFile(caminho, "w", zipfile.ZIP_DEFLATED) as zf:
+        with tempfile.TemporaryDirectory(prefix="controle_obras_seguranca_") as tmp:
+            tmp_path = Path(tmp)
+            db_copia = tmp_path / "app.db"
             if self.db.db_path.exists():
-                zf.write(self.db.db_path, "database/app.db")
-            if self.storage.anexos_dir.exists():
-                for arquivo in self.storage.anexos_dir.rglob("*"):
-                    if arquivo.is_file():
-                        arcname = "storage/anexos/" + arquivo.relative_to(
-                            self.storage.anexos_dir
-                        ).as_posix()
-                        zf.write(arquivo, arcname)
-            if self.storage.obras_reports_dir.exists():
-                for arquivo in self.storage.obras_reports_dir.rglob("*"):
-                    if arquivo.is_file():
-                        arcname = "reports/obras/" + arquivo.relative_to(
-                            self.storage.obras_reports_dir
-                        ).as_posix()
-                        zf.write(arquivo, arcname)
-            if self.storage.logos_dir.exists():
-                for arquivo in self.storage.logos_dir.rglob("*"):
-                    if arquivo.is_file():
-                        arcname = "storage/logos/" + arquivo.relative_to(
-                            self.storage.logos_dir
-                        ).as_posix()
-                        zf.write(arquivo, arcname)
+                self._backup_database(db_copia)
+
+            with zipfile.ZipFile(caminho, "w", zipfile.ZIP_DEFLATED) as zf:
+                if db_copia.exists():
+                    zf.write(db_copia, "database/app.db")
+                if self.storage.anexos_dir.exists():
+                    for arquivo in self.storage.anexos_dir.rglob("*"):
+                        if arquivo.is_file():
+                            arcname = "storage/anexos/" + arquivo.relative_to(
+                                self.storage.anexos_dir
+                            ).as_posix()
+                            zf.write(arquivo, arcname)
+                if self.storage.obras_reports_dir.exists():
+                    for arquivo in self.storage.obras_reports_dir.rglob("*"):
+                        if arquivo.is_file():
+                            arcname = "reports/obras/" + arquivo.relative_to(
+                                self.storage.obras_reports_dir
+                            ).as_posix()
+                            zf.write(arquivo, arcname)
+                if self.storage.logos_dir.exists():
+                    for arquivo in self.storage.logos_dir.rglob("*"):
+                        if arquivo.is_file():
+                            arcname = "storage/logos/" + arquivo.relative_to(
+                                self.storage.logos_dir
+                            ).as_posix()
+                            zf.write(arquivo, arcname)
 
         return caminho

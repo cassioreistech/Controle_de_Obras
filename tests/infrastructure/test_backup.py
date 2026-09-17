@@ -1,6 +1,7 @@
 """Testes para o serviço de backup."""
 
 import json
+import tempfile
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -203,3 +204,105 @@ def test_gerar_backup_nao_sobrescreve_arquivo_existente(temp_app, tmp_path):
     assert caminho.exists()
     assert caminho.name != f"backup_{timestamp}.zip"
     assert caminho.name != f"backup_{timestamp}_2.zip"
+
+
+def test_restore_rejeita_versao_de_backup_incompativel(temp_app, tmp_path):
+    """Regressão: versão antiga do backup gera erro claro, não warning silencioso."""
+    storage, db, service = temp_app
+    caminho = service.gerar_backup(
+        nome_empresa="Empresa",
+        versao_sistema="1.0.0",
+        quantidade_obras=0,
+        quantidade_anexos=0,
+        destino=tmp_path / "backups",
+    )
+    alterado = tmp_path / "backups" / "versao_antiga.zip"
+    with zipfile.ZipFile(caminho) as zin, zipfile.ZipFile(alterado, "w") as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "manifest.json":
+                manifest = json.loads(data)
+                manifest["backup_version"] = "1.0"
+                data = json.dumps(manifest).encode("utf-8")
+            zout.writestr(item, data)
+
+    with pytest.raises(RestoreValidationError, match="incompat"):
+        service.restaurar_backup(alterado)
+
+
+def test_restore_falha_reverte_do_backup_seguranca(temp_app, monkeypatch):
+    """Regressão: falha durante a restauração reverte banco/anexos ao estado anterior."""
+    import shutil
+
+    import controle_obras.infrastructure.backup as backup_mod
+
+    storage, db, service = temp_app
+
+    with db.get_connection() as conn:
+        conn.execute("CREATE TABLE marcador_original (id INTEGER PRIMARY KEY)")
+        conn.execute("INSERT INTO marcador_original (id) VALUES (7)")
+        conn.commit()
+    storage.anexos_dir.mkdir(parents=True, exist_ok=True)
+    (storage.anexos_dir / "original.txt").write_text("dado original")
+
+    caminho_zip = service.gerar_backup(
+        nome_empresa="Empresa",
+        versao_sistema="1.0.0",
+        quantidade_obras=0,
+        quantidade_anexos=1,
+    )
+    db.close_all()
+
+    with db.get_connection() as conn:
+        conn.execute("DROP TABLE marcador_original")
+        conn.commit()
+    (storage.anexos_dir / "original.txt").unlink()
+    (storage.anexos_dir / "novo.txt").write_text("dado novo")
+
+    real_copytree = shutil.copytree
+    chamadas = {"n": 0}
+
+    def copytree_com_falha_primeira(src, dst, **kwargs):
+        chamadas["n"] += 1
+        if chamadas["n"] == 1:
+            raise OSError("falha simulada de disco")
+        return real_copytree(src, dst, **kwargs)
+
+    monkeypatch.setattr(backup_mod.shutil, "copytree", copytree_com_falha_primeira)
+
+    with pytest.raises(OSError, match="falha simulada"):
+        service.restaurar_backup(caminho_zip)
+
+    with db.get_connection() as conn:
+        tabelas = {
+            row[0]
+            for row in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )
+        }
+    assert "marcador_original" not in tabelas
+
+
+def test_backup_seguranca_usa_copia_consistente(temp_app):
+    """Regressão: backup de segurança contém um SQLite válido e legível."""
+    import sqlite3 as _sqlite3
+
+    storage, db, service = temp_app
+    with db.get_connection() as conn:
+        conn.execute("CREATE TABLE dados_op (id INTEGER PRIMARY KEY, v TEXT)")
+        conn.execute("INSERT INTO dados_op (id, v) VALUES (1, 'x')")
+        conn.commit()
+    db.close_all()
+
+    seguranca = service._criar_backup_seguranca()
+    with tempfile.TemporaryDirectory() as tmp:
+        destino = Path(tmp) / "seguro.db"
+        with zipfile.ZipFile(seguranca, "r") as zf:
+            assert "database/app.db" in zf.namelist()
+            destino.write_bytes(zf.read("database/app.db"))
+        conn = _sqlite3.connect(str(destino))
+        try:
+            row = conn.execute("SELECT v FROM dados_op WHERE id=1").fetchone()
+            assert row[0] == "x"
+        finally:
+            conn.close()

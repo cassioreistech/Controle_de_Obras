@@ -32,7 +32,7 @@ def _zip_com_manifesto_malicioso(caminho: Path, membro_malicioso: str) -> Path:
     caminho_zip = caminho / "malicioso.zip"
 
     manifest = {
-        "backup_version": "1.0",
+        "backup_version": "2.0",
         "app_version": "1.0.0",
         "generated_at": datetime.now().isoformat(),
         "database_file": "app.db",
