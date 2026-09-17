@@ -125,6 +125,9 @@ class EmpresaScreen(QWidget):
         empresa_existente = self._parent.empresa_service.obter()
         if empresa_existente:
             empresa.id = empresa_existente.id
+            empresa.logo_path = empresa_existente.logo_path or ""
+            empresa.created_at = empresa_existente.created_at
+            empresa.updated_at = empresa_existente.updated_at
 
         try:
             self._parent.empresa_service.salvar(empresa)

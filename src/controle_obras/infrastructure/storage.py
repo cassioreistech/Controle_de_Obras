@@ -71,7 +71,7 @@ class AppStorage:
     ) -> str:
         from datetime import datetime
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         safe_original = Path(original_name).name
         # Sanitiza o código da obra para impedir path traversal
         safe_codigo = "".join(

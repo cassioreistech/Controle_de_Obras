@@ -332,7 +332,7 @@ class BackupApplicationService:
 
 class RelatorioPDFService:
     """Servico para geracao de relatorio PDF da obra.
-    
+
     Motor unificado: ReportLab Platypus (sem dependencias externas).
     """
 
@@ -387,13 +387,13 @@ class RelatorioPDFService:
 
     def gerar_relatorio_obra(self, obra_id: int) -> Path:
         """Gera relatorio PDF usando ReportLab Platypus.
-        
+
         Args:
             obra_id: ID da obra para gerar o relatorio.
-            
+
         Returns:
             Path do arquivo PDF gerado.
-            
+
         Raises:
             ValueError: Se a obra nao for encontrada ou erro na geracao.
         """
