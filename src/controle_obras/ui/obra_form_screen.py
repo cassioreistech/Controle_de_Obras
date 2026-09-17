@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from typing import TYPE_CHECKING
-
-from decimal import Decimal, InvalidOperation
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -23,6 +22,7 @@ from PySide6.QtWidgets import (
 )
 
 from controle_obras.domain.models import Obra
+from controle_obras.ui.value_utils import formatar_valor, parse_valor
 
 if TYPE_CHECKING:
     from controle_obras.ui.app_container import AppContainer
@@ -100,18 +100,21 @@ class ObraFormScreen(QWidget):
             self.title.setText("Editar Obra")
             obra = self._parent.obra_service.obter(obra_id)
             if obra:
-                self.input_codigo.setText(obra.codigo)
-                self.input_nome.setText(obra.nome)
-                self.input_cliente.setText(obra.cliente_contratante)
-                self.input_local.setText(obra.local_obra)
-                self.input_engenheiro.setText(obra.engenheiro_responsavel)
+                self.input_codigo.setText(obra.codigo or "")
+                self.input_nome.setText(obra.nome or "")
+                self.input_cliente.setText(obra.cliente_contratante or "")
+                self.input_local.setText(obra.local_obra or "")
+                self.input_engenheiro.setText(obra.engenheiro_responsavel or "")
                 if obra.data_inicio:
                     self.input_data_inicio.setDate(obra.data_inicio)
                 if obra.previsao_termino:
                     self.input_previsao.setDate(obra.previsao_termino)
+                # Status: incluir no combo se for legado/inexistente
+                if self.input_status.findText(obra.status) < 0:
+                    self.input_status.addItem(obra.status)
                 self.input_status.setCurrentText(obra.status)
-                self.input_valor.setText(self._formatar_valor(Decimal(str(obra.valor_contratado_inicial))))
-                self.input_observacoes.setPlainText(obra.observacoes)
+                self.input_valor.setText(formatar_valor(Decimal(str(obra.valor_contratado_inicial))))
+                self.input_observacoes.setPlainText(obra.observacoes or "")
         else:
             self.title.setText("Nova Obra")
             self._limpar_campos()
@@ -128,34 +131,6 @@ class ObraFormScreen(QWidget):
         self.input_valor.clear()
         self.input_observacoes.clear()
 
-    def _parse_valor(self, text: str) -> Decimal:
-        """Parse valor monetário suportando formatos brasileiro e Python."""
-        text = text.strip()
-        if not text or text in ("0", "0,00", "0.00"):
-            return Decimal("0.00")
-
-        # Formato brasileiro: "1.000,00" → milhares com ponto, decimal com vírgula
-        if "," in text:
-            # Remove pontos de milhares, converte vírgula para ponto decimal
-            text = text.replace(".", "").replace(",", ".")
-        # Formato Python: "1000.00" (sem vírgula, ponto é decimal)
-        # Não faz nothing — ponto já é separador decimal
-
-        try:
-            return Decimal(text)
-        except InvalidOperation:
-            return Decimal("0.00")
-
-    def _formatar_valor(self, valor: Decimal) -> str:
-        """Formata Decimal para exibição no campo (formato brasileiro)."""
-        # Converte para string e formata como BRL: "1.000,00"
-        partes = f"{valor:.2f}".split(".")
-        inteiro = partes[0]
-        decimal = partes[1] if len(partes) > 1 else "00"
-        # Adiciona separador de milhares
-        inteiro_formatado = f"{int(inteiro):,}".replace(",", ".")
-        return f"{inteiro_formatado},{decimal}"
-
     def _salvar(self) -> None:
         codigo = self.input_codigo.text().strip()
         nome = self.input_nome.text().strip()
@@ -164,9 +139,8 @@ class ObraFormScreen(QWidget):
             QMessageBox.warning(self, "Validação", "Código e nome são obrigatórios.")
             return
 
-        try:
-            valor = self._parse_valor(self.input_valor.text())
-        except Exception:
+        valor = parse_valor(self.input_valor.text())
+        if valor is None:
             QMessageBox.warning(self, "Validação", "Valor contratado inválido.")
             return
 

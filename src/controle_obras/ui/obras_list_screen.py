@@ -27,24 +27,14 @@ if TYPE_CHECKING:
     from controle_obras.ui.app_container import AppContainer
 
 from controle_obras.ui.styles import (
-    BACKGROUND,
-    BORDER,
     DANGER,
     DANGER_HOVER,
-    DANGER_LIGHT,
     INFO,
     INFO_HOVER,
-    INFO_LIGHT,
     PRIMARY,
     SUCCESS,
-    SUCCESS_HOVER,
-    SURFACE,
     TEXT_MUTED,
-    TEXT_PRIMARY,
-    TEXT_SECONDARY,
-    get_action_button_style,
     get_input_style,
-    get_primary_button_style,
     get_screen_title_style,
     get_success_button_style,
     get_table_style,
@@ -146,6 +136,10 @@ class ObrasListScreen(QWidget):
 
         obra_ativa_id = self._parent.config_service.obter_obra_ativa()
 
+        # Evita que o sorting ativo embaralhe linhas/cellWidgets durante o preenchimento
+        sorting_enabled = self.table.isSortingEnabled()
+        self.table.setSortingEnabled(False)
+
         self.table.setRowCount(len(obras_filtradas))
         self.lbl_contagem.setText(
             f"{len(obras_filtradas)} obra{'s' if len(obras_filtradas) != 1 else ''}"
@@ -214,7 +208,7 @@ class ObrasListScreen(QWidget):
             btn_editar.setAccessibleName("Editar obra")
             btn_editar.setFixedSize(30, 30)
             btn_editar.setCursor(Qt.CursorShape.PointingHandCursor)
-            
+
             # SVG inline - ícone de editar mais moderno
             svg_editar = '''
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -222,10 +216,8 @@ class ObrasListScreen(QWidget):
                     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                 </svg>
             '''
-            
-            from PySide6.QtGui import QPixmap, QPainter, QIcon
-            from PySide6.QtSvg import QSvgRenderer
-            
+
+
             pixmap = QPixmap(16, 16)
             pixmap.fill(Qt.GlobalColor.transparent)
             renderer = QSvgRenderer(svg_editar.encode())
@@ -234,7 +226,7 @@ class ObrasListScreen(QWidget):
             painter.end()
             btn_editar.setIcon(QIcon(pixmap))
             btn_editar.setIconSize(pixmap.rect().size())
-            
+
             btn_editar.setStyleSheet(f"""
                 QPushButton {{
                     background-color: {INFO};
@@ -254,7 +246,7 @@ class ObrasListScreen(QWidget):
             btn_excluir.setAccessibleName("Excluir obra")
             btn_excluir.setFixedSize(30, 30)
             btn_excluir.setCursor(Qt.CursorShape.PointingHandCursor)
-            
+
             # SVG inline - ícone de lixeira mais moderno
             svg_excluir = '''
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -264,7 +256,7 @@ class ObrasListScreen(QWidget):
                     <line x1="14" y1="11" x2="14" y2="17"/>
                 </svg>
             '''
-            
+
             pixmap = QPixmap(16, 16)
             pixmap.fill(Qt.GlobalColor.transparent)
             renderer = QSvgRenderer(svg_excluir.encode())
@@ -273,7 +265,7 @@ class ObrasListScreen(QWidget):
             painter.end()
             btn_excluir.setIcon(QIcon(pixmap))
             btn_excluir.setIconSize(pixmap.rect().size())
-            
+
             btn_excluir.setStyleSheet(f"""
                 QPushButton {{
                     background-color: {DANGER};
@@ -284,8 +276,10 @@ class ObrasListScreen(QWidget):
                     background-color: {DANGER_HOVER};
                 }}
             """)
-            btn_excluir.clicked.connect(lambda checked, oid=obra.id: self._confirmar_exclusao(oid))
+            btn_excluir.clicked.connect(lambda checked, oid=obra.id: self._excluir_obra(oid))
             self.table.setCellWidget(row, 7, btn_excluir)
+
+        self.table.setSortingEnabled(sorting_enabled)
 
     def _duplo_clique(self) -> None:
         obra_id = self._obra_id_selecionada()
@@ -341,6 +335,10 @@ class ObrasListScreen(QWidget):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
         if resposta == QMessageBox.StandardButton.Yes:
+            if obra:
+                anexos = self._parent.anexo_service.listar_por_obra(obra_id)
+                for anexo in anexos:
+                    self._parent.anexo_service.excluir(anexo.id, obra.codigo)
             self._parent.obra_service.excluir(obra_id)
             if self._parent.config_service.obter_obra_ativa() == obra_id:
                 self._parent.set_obra_ativa(None)

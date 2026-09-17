@@ -1,7 +1,7 @@
 """Casos de uso e serviços de aplicação."""
 
+import contextlib
 import shutil
-from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -154,6 +154,10 @@ class TipoLancamentoService:
     def listar_ativos(self) -> list[Any]:
         return self._repo.list_all()
 
+    def obter(self, tipo_id: int) -> Any | None:
+        """Obtém tipo de lançamento por id (pode estar inativo)."""
+        return self._repo.get_by_id(tipo_id)
+
 
 class AnexoService:
     """Caso de uso para anexos."""
@@ -210,7 +214,14 @@ class AnexoService:
     def listar_por_lancamento(self, lancamento_id: int) -> list[Anexo]:
         return self._repo.list_by_lancamento(lancamento_id)
 
-    def excluir(self, anexo_id: int) -> None:
+    def excluir(self, anexo_id: int, obra_codigo: str | None = None) -> None:
+        """Remove registro do banco e arquivo físico, se obra_codigo fornecido."""
+        if obra_codigo:
+            anexo = self._repo.get_by_id(anexo_id)
+            if anexo and anexo.caminho_relativo:
+                caminho = self._storage.anexo_path(obra_codigo, anexo.caminho_relativo)
+                with contextlib.suppress(OSError):
+                    caminho.unlink(missing_ok=True)
         self._repo.delete(anexo_id)
 
 

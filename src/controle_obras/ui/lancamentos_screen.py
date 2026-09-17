@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QDesktopServices, QIcon, QPainter, QPixmap
+from PySide6.QtGui import QDesktopServices, QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QComboBox,
@@ -28,13 +28,12 @@ from PySide6.QtWidgets import (
 )
 
 from controle_obras.domain.models import Lancamento
+from controle_obras.ui.value_utils import formatar_valor, parse_valor
 
 if TYPE_CHECKING:
     from controle_obras.ui.app_container import AppContainer
 
 from controle_obras.ui.styles import (
-    BACKGROUND,
-    BORDER,
     DANGER,
     DANGER_HOVER,
     DANGER_LIGHT,
@@ -42,19 +41,14 @@ from controle_obras.ui.styles import (
     INFO_HOVER,
     INFO_LIGHT,
     PRIMARY,
-    SUCCESS,
-    SUCCESS_HOVER,
     SURFACE,
     TEXT_MUTED,
-    TEXT_PRIMARY,
     TEXT_SECONDARY,
-    get_action_button_style,
     get_input_style,
     get_screen_title_style,
     get_success_button_style,
     get_table_style,
 )
-
 
 ORIGENS_COM_ANEXO_OBRIGATORIO = {
     "Planilha orçamentária",
@@ -71,6 +65,9 @@ class LancamentosScreen(QWidget):
         self._obra_id: int | None = None
         self._arquivo_anexo: Path | None = None
         self._editando_id: int | None = None
+        self._tipos_cache: dict[int, str] = {}
+        self._tem_anexo_existente = False
+        self._remover_anexo_existente = False
         self._init_ui()
 
     def _init_ui(self) -> None:
@@ -303,7 +300,7 @@ class LancamentosScreen(QWidget):
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
-        
+
         # Configurar colunas da tabela
         self.table.horizontalHeader().setStretchLastSection(False)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)  # Data
@@ -315,7 +312,7 @@ class LancamentosScreen(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
         self.table.horizontalHeader().resizeSection(5, 70)
         self.table.horizontalHeader().resizeSection(6, 75)
-        
+
         self.table.verticalHeader().setVisible(False)
         self.table.verticalHeader().setDefaultSectionSize(42)
         self.table.setStyleSheet(get_table_style(PRIMARY))
@@ -329,6 +326,8 @@ class LancamentosScreen(QWidget):
         self._carregar_tipos()
         self._carregar_lancamentos()
         self._arquivo_anexo = None
+        self._tem_anexo_existente = False
+        self._remover_anexo_existente = False
         self._atualizar_label_anexo()
 
     def _normalizar_nome(self, nome: str) -> str:
@@ -337,12 +336,14 @@ class LancamentosScreen(QWidget):
 
     def _carregar_tipos(self) -> None:
         self.input_tipo.clear()
+        self._tipos_cache = {}
         vistos = set()
         tipos = self._parent.tipo_lancamento_service.listar_ativos()
         for tipo in tipos:
             nome_norm = self._normalizar_nome(tipo.nome)
             if nome_norm not in vistos:
                 vistos.add(nome_norm)
+                self._tipos_cache[tipo.id] = tipo.nome
                 self.input_tipo.addItem(tipo.nome, tipo.id)
 
     def _carregar_lancamentos(self) -> None:
@@ -366,9 +367,20 @@ class LancamentosScreen(QWidget):
             item_desc.setFont(font_desc)
             self.table.setItem(row, 1, item_desc)
 
-            tipo_nome = self.input_tipo.itemText(
-                self.input_tipo.findData(lanc.tipo_lancamento_id)
-            ) if lanc.tipo_lancamento_id else ""
+            tipo_id = lanc.tipo_lancamento_id
+            if tipo_id:
+                idx_tipo = self.input_tipo.findData(tipo_id)
+                if idx_tipo >= 0:
+                    tipo_nome = self.input_tipo.itemText(idx_tipo)
+                else:
+                    tipo_nome = self._tipos_cache.get(tipo_id) or ""
+                    if not tipo_nome:
+                        tipo = self._parent.tipo_lancamento_service.obter(tipo_id)
+                        if tipo:
+                            tipo_nome = tipo.nome
+                            self._tipos_cache[tipo_id] = tipo_nome
+            else:
+                tipo_nome = ""
             item_tipo = QTableWidgetItem(tipo_nome)
             item_tipo.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             font_tipo = item_tipo.font()
@@ -398,7 +410,7 @@ class LancamentosScreen(QWidget):
             btn_editar.setAccessibleName("Editar lançamento")
             btn_editar.setFixedSize(30, 30)
             btn_editar.setCursor(Qt.CursorShape.PointingHandCursor)
-            
+
             # SVG inline - ícone de editar mais moderno
             svg_editar = '''
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -406,10 +418,8 @@ class LancamentosScreen(QWidget):
                     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                 </svg>
             '''
-            
-            from PySide6.QtGui import QPixmap, QPainter, QIcon
-            from PySide6.QtSvg import QSvgRenderer
-            
+
+
             pixmap = QPixmap(16, 16)
             pixmap.fill(Qt.GlobalColor.transparent)
             renderer = QSvgRenderer(svg_editar.encode())
@@ -418,7 +428,7 @@ class LancamentosScreen(QWidget):
             painter.end()
             btn_editar.setIcon(QIcon(pixmap))
             btn_editar.setIconSize(pixmap.rect().size())
-            
+
             btn_editar.setStyleSheet(f"""
                 QPushButton {{
                     background-color: {INFO};
@@ -438,7 +448,7 @@ class LancamentosScreen(QWidget):
             btn_excluir.setAccessibleName("Excluir lançamento")
             btn_excluir.setFixedSize(30, 30)
             btn_excluir.setCursor(Qt.CursorShape.PointingHandCursor)
-            
+
             # SVG inline - ícone de lixeira mais moderno
             svg_excluir = '''
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -448,7 +458,7 @@ class LancamentosScreen(QWidget):
                     <line x1="14" y1="11" x2="14" y2="17"/>
                 </svg>
             '''
-            
+
             pixmap = QPixmap(16, 16)
             pixmap.fill(Qt.GlobalColor.transparent)
             renderer = QSvgRenderer(svg_excluir.encode())
@@ -457,7 +467,7 @@ class LancamentosScreen(QWidget):
             painter.end()
             btn_excluir.setIcon(QIcon(pixmap))
             btn_excluir.setIconSize(pixmap.rect().size())
-            
+
             btn_excluir.setStyleSheet(f"""
                 QPushButton {{
                     background-color: {DANGER};
@@ -499,6 +509,13 @@ class LancamentosScreen(QWidget):
             self.lbl_anexo.setText(f"✓ {self._arquivo_anexo.name}")
             self.lbl_anexo.setStyleSheet("color: #27ae60; font-size: 12px;")
             self.lbl_anexo.setVisible(True)
+            self.btn_ver_anexo.setVisible(False)
+            self.btn_excluir_anexo.setVisible(True)
+        elif self._tem_anexo_existente:
+            self.lbl_anexo.setText("✓ Arquivo já vinculado")
+            self.lbl_anexo.setStyleSheet("color: #27ae60; font-size: 12px;")
+            self.lbl_anexo.setVisible(True)
+            self.btn_ver_anexo.setVisible(True)
             self.btn_excluir_anexo.setVisible(True)
         else:
             origem = self.input_origem.currentText()
@@ -510,21 +527,20 @@ class LancamentosScreen(QWidget):
                 self.lbl_anexo.setText("Nenhum arquivo selecionado")
                 self.lbl_anexo.setStyleSheet("color: #7f8c8d; font-size: 12px;")
                 self.lbl_anexo.setVisible(False)
+            self.btn_ver_anexo.setVisible(False)
             self.btn_excluir_anexo.setVisible(False)
 
     def _auto_calcular_total(self) -> None:
-        try:
-            qtd_text = self.input_quantidade.text().strip().replace(".", "").replace(",", ".")
-            unit_text = self.input_valor_unitario.text().strip().replace("R$", "").replace(".", "").replace(",", ".").strip()
-            qtd = float(qtd_text) if qtd_text else 0.0
-            unit = float(unit_text) if unit_text else 0.0
-            total = qtd * unit
-            if total > 0:
-                self.input_valor_total.setText(f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-            else:
-                self.input_valor_total.setText("")
-        except ValueError:
-            pass
+        qtd = parse_valor(self.input_quantidade.text())
+        unit = parse_valor(self.input_valor_unitario.text())
+        if qtd is None or unit is None:
+            self.input_valor_total.setText("")
+            return
+        total = qtd * unit
+        if total > 0:
+            self.input_valor_total.setText(formatar_valor(total))
+        else:
+            self.input_valor_total.setText("")
 
     def _salvar(self) -> None:
         if self._obra_id is None:
@@ -536,7 +552,11 @@ class LancamentosScreen(QWidget):
             return
 
         origem = self.input_origem.currentText()
-        if origem in ORIGENS_COM_ANEXO_OBRIGATORIO and not self._arquivo_anexo:
+        if (
+            origem in ORIGENS_COM_ANEXO_OBRIGATORIO
+            and not self._arquivo_anexo
+            and not self._tem_anexo_existente
+        ):
             QMessageBox.warning(
                 self,
                 "Validação",
@@ -544,15 +564,21 @@ class LancamentosScreen(QWidget):
             )
             return
 
-        valor_text = self.input_valor_total.text().strip().replace("R$", "").replace(".", "").replace(",", ".").strip()
-        try:
-            valor_total = float(valor_text) if valor_text else 0.0
-        except ValueError:
+        valor_total = parse_valor(self.input_valor_total.text())
+        if valor_total is None:
             QMessageBox.warning(self, "Validação", "Valor total inválido.")
             return
 
-        qtd_text = self.input_quantidade.text().strip().replace(".", "").replace(",", ".")
-        unit_text = self.input_valor_unitario.text().strip().replace("R$", "").replace(".", "").replace(",", ".").strip()
+        qtd_text = self.input_quantidade.text().strip()
+        unit_text = self.input_valor_unitario.text().strip()
+        qtd = parse_valor(qtd_text) if qtd_text else None
+        unit = parse_valor(unit_text) if unit_text else None
+        if qtd is None and qtd_text:
+            QMessageBox.warning(self, "Validação", "Quantidade inválida.")
+            return
+        if unit is None and unit_text:
+            QMessageBox.warning(self, "Validação", "Valor unitário inválido.")
+            return
 
         lancamento = Lancamento(
             id=self._editando_id,
@@ -561,9 +587,9 @@ class LancamentosScreen(QWidget):
             data_lancamento=self.input_data.date().toPython(),
             descricao=descricao,
             complemento="",
-            quantidade=float(qtd_text) if qtd_text else None,
+            quantidade=float(qtd) if qtd is not None else None,
             unidade=self.input_unidade.text().strip(),
-            valor_unitario=float(unit_text) if unit_text else None,
+            valor_unitario=float(unit) if unit is not None else None,
             valor_total=valor_total,
             origem_informacao=origem,
             observacoes=self.input_observacoes.text().strip(),
@@ -572,16 +598,26 @@ class LancamentosScreen(QWidget):
         try:
             lancamento_salvo = self._parent.lancamento_service.salvar(lancamento)
 
-            if self._arquivo_anexo and lancamento_salvo.id:
+            if lancamento_salvo.id:
                 obra = self._parent.obra_service.obter(self._obra_id)
                 if obra:
-                    self._parent.anexo_service.anexar_arquivo(
-                        obra_codigo=obra.codigo,
-                        arquivo_origem=self._arquivo_anexo,
-                        tipo_anexo=origem,
-                        obra_id=self._obra_id,
-                        lancamento_id=lancamento_salvo.id,
-                    )
+                    # Remover anexo antigo marcado para remoção/substituição
+                    if self._remover_anexo_existente:
+                        anexos_antigos = self._parent.anexo_service.listar_por_lancamento(
+                            lancamento_salvo.id
+                        )
+                        for anexo in anexos_antigos:
+                            self._parent.anexo_service.excluir(anexo.id, obra.codigo)
+
+                    # Anexar novo arquivo se houver
+                    if self._arquivo_anexo:
+                        self._parent.anexo_service.anexar_arquivo(
+                            obra_codigo=obra.codigo,
+                            arquivo_origem=self._arquivo_anexo,
+                            tipo_anexo=origem,
+                            obra_id=self._obra_id,
+                            lancamento_id=lancamento_salvo.id,
+                        )
 
             msg = "Lançamento atualizado." if self._editando_id else "Lançamento salvo."
             QMessageBox.information(self, "Sucesso", msg)
@@ -593,6 +629,8 @@ class LancamentosScreen(QWidget):
 
     def _limpar_formulario(self) -> None:
         self._editando_id = None
+        self._tem_anexo_existente = False
+        self._remover_anexo_existente = False
         self.input_data.setDate(date.today())
         self.input_tipo.setCurrentIndex(0)
         self.input_descricao.clear()
@@ -629,7 +667,14 @@ class LancamentosScreen(QWidget):
         # Preencher formulário com dados do lançamento
         self.input_data.setDate(lancamento.data_lancamento)
         if lancamento.tipo_lancamento_id:
+            # Inclui tipo inativo no combo para não trocar silenciosamente na edição
             idx = self.input_tipo.findData(lancamento.tipo_lancamento_id)
+            if idx < 0:
+                tipo = self._parent.tipo_lancamento_service.obter(lancamento.tipo_lancamento_id)
+                if tipo:
+                    self.input_tipo.addItem(tipo.nome, tipo.id)
+                    self._tipos_cache[tipo.id] = tipo.nome
+                    idx = self.input_tipo.findData(lancamento.tipo_lancamento_id)
             if idx >= 0:
                 self.input_tipo.setCurrentIndex(idx)
         self.input_descricao.setText(lancamento.descricao)
@@ -647,6 +692,9 @@ class LancamentosScreen(QWidget):
 
         # Verificar se existe anexo vinculado
         anexos = self._parent.anexo_service.listar_por_lancamento(lancamento_id)
+        self._tem_anexo_existente = bool(anexos)
+        self._remover_anexo_existente = False
+        self._arquivo_anexo = None
         if anexos:
             anexo = anexos[0]
             self.lbl_anexo.setText(f"✓ {anexo.nome_original}")
@@ -680,21 +728,28 @@ class LancamentosScreen(QWidget):
     def _ver_anexo_atual(self) -> None:
         if self._editando_id is None:
             return
-        anexos = self._parent.anexo_service.listar_por_lancamento(self._editando_id)
-        if not anexos:
-            QMessageBox.information(self, "Anexo", "Este lançamento não possui anexo.")
-            return
-        anexo = anexos[0]
-        caminho = self._parent.storage.anexo_path(
-            self._parent.obra_service.obter(self._obra_id).codigo,
-            anexo.caminho_relativo,
-        )
-        if caminho.exists():
-            QDesktopServices.openUrl(caminho.as_uri())
-        else:
-            QMessageBox.warning(self, "Anexo", "Arquivo não encontrado.")
+        try:
+            anexos = self._parent.anexo_service.listar_por_lancamento(self._editando_id)
+            if not anexos:
+                QMessageBox.information(self, "Anexo", "Este lançamento não possui anexo.")
+                return
+            anexo = anexos[0]
+            obra = self._parent.obra_service.obter(self._obra_id)
+            if not obra:
+                QMessageBox.warning(self, "Anexo", "Obra não encontrada.")
+                return
+            caminho = self._parent.storage.anexo_path(obra.codigo, anexo.caminho_relativo)
+            if caminho.exists():
+                QDesktopServices.openUrl(caminho.as_uri())
+            else:
+                QMessageBox.warning(self, "Anexo", "Arquivo não encontrado.")
+        except Exception as e:
+            QMessageBox.critical(self, "Erro", f"Falha ao abrir anexo:\n{str(e)}")
 
     def _excluir_anexo_atual(self) -> None:
+        if self._tem_anexo_existente:
+            self._remover_anexo_existente = True
+            self._tem_anexo_existente = False
         self._arquivo_anexo = None
         self._atualizar_label_anexo()
         self.btn_ver_anexo.setVisible(False)

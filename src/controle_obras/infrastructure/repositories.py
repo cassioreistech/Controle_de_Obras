@@ -261,6 +261,14 @@ class TipoLancamentoRepository(BaseRepository[TipoLancamento]):
         ).fetchall()
         return [self._row_to_tipo(row) for row in rows]
 
+    def get_by_id(self, tipo_id: int) -> TipoLancamento | None:
+        row = self._db.execute(
+            "SELECT * FROM tipos_lancamento WHERE id=?", (tipo_id,)
+        ).fetchone()
+        if not row:
+            return None
+        return self._row_to_tipo(row)
+
     @staticmethod
     def _row_to_tipo(row: sqlite3.Row) -> TipoLancamento:
         return TipoLancamento(

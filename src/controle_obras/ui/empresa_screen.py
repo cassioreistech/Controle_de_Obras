@@ -83,15 +83,15 @@ class EmpresaScreen(QWidget):
     def carregar(self) -> None:
         empresa = self._parent.empresa_service.obter()
         if empresa:
-            self.input_razao.setText(empresa.razao_social)
-            self.input_fantasia.setText(empresa.nome_fantasia)
-            self.input_cnpj.setText(empresa.cnpj)
-            self.input_telefone.setText(empresa.telefone)
-            self.input_email.setText(empresa.email)
-            self.input_endereco.setText(empresa.endereco)
-            self.input_cidade.setText(empresa.cidade)
-            self.input_uf.setText(empresa.uf)
-            self.input_responsavel.setText(empresa.responsavel)
+            self.input_razao.setText(empresa.razao_social or "")
+            self.input_fantasia.setText(empresa.nome_fantasia or "")
+            self.input_cnpj.setText(empresa.cnpj or "")
+            self.input_telefone.setText(empresa.telefone or "")
+            self.input_email.setText(empresa.email or "")
+            self.input_endereco.setText(empresa.endereco or "")
+            self.input_cidade.setText(empresa.cidade or "")
+            self.input_uf.setText(empresa.uf or "")
+            self.input_responsavel.setText(empresa.responsavel or "")
 
     def _limpar(self) -> None:
         self.input_razao.clear()
@@ -126,6 +126,9 @@ class EmpresaScreen(QWidget):
         if empresa_existente:
             empresa.id = empresa_existente.id
 
-        self._parent.empresa_service.salvar(empresa)
-        QMessageBox.information(self, "Sucesso", "Empresa salva com sucesso.")
-        self._parent.show_obras_list()
+        try:
+            self._parent.empresa_service.salvar(empresa)
+            QMessageBox.information(self, "Sucesso", "Empresa salva com sucesso.")
+            self._parent.show_obras_list()
+        except Exception as e:
+            QMessageBox.critical(self, "Erro", f"Falha ao salvar empresa:\n{str(e)}")
