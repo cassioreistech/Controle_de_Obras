@@ -455,7 +455,7 @@ class DocxReportService:
         self._adicionar_assinatura(doc, responsavel, cnpj)
         
         # Salvar DOCX temporário
-        codigo_sanitized = _sanitizar_para_filename(_texto(obra.codigo, ""))
+        codigo_sanitized = _sanitizar_para_filename(_texto(obra.codigo, "")) or "SEM_CODIGO"
         filename = f"relatorio_obra_{codigo_sanitized}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
         docx_path = self._storage.relatorio_path(filename)
         docx_path.parent.mkdir(parents=True, exist_ok=True)

@@ -327,11 +327,15 @@ def _formatar_data(valor: Any) -> str:
 
 
 def _formatar_moeda(valor: Decimal) -> str:
-    """Formata valor monetario para R$ 1.234,56."""
+    """Formata valor monetario para R$ 1.234,56 (negativo: -R$ 1.234,56)."""
     if valor is None:
         valor = Decimal("0.00")
-    fmt = f"{float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    return f"R$ {fmt}"
+    if not isinstance(valor, Decimal):
+        valor = Decimal(str(valor))
+    negativo = valor < 0
+    valor = abs(valor).quantize(Decimal("0.01"))
+    fmt = f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"-R$ {fmt}" if negativo else f"R$ {fmt}"
 
 
 def _formatar_tamanho(tamanho_bytes: int) -> str:
@@ -375,11 +379,20 @@ def _build_cabecalho(obra: Any, estilos: dict, fonte_bold: str, base: Any, logo_
     )
 
     if logo_path and Path(logo_path).exists():
-        # Logo centralizado
+        # Logo centralizado com proporção preservada
         img = Image(logo_path)
-        img.drawWidth = 3.6 * cm
-        img.drawHeight = 3.6 * cm
-        img_table = Table([[img]], colWidths=[3.6 * cm])
+        largura_max = 3.6 * cm
+        altura_max = 3.6 * cm
+        altura_in = getattr(img, "imageHeight", None) or largura_max
+        largura_in = getattr(img, "imageWidth", None) or altura_max
+        proporcao = altura_in / largura_in if largura_in else 1
+        if proporcao >= 1:
+            img.drawHeight = altura_max
+            img.drawWidth = altura_max / proporcao
+        else:
+            img.drawWidth = largura_max
+            img.drawHeight = largura_max * proporcao
+        img_table = Table([[img]], colWidths=[img.drawWidth])
         img_table.setStyle(TableStyle([
             ("ALIGN", (0, 0), (0, 0), "CENTER"),
             ("VALIGN", (0, 0), (0, 0), "MIDDLE"),
@@ -806,7 +819,7 @@ class ReportLabPDFService:
         downloads_dir = Path.home() / "Downloads"
         downloads_dir.mkdir(exist_ok=True)
         
-        nome_sanitized = _sanitizar_para_filename(_texto(obra.nome, "Obra"))
+        nome_sanitized = _sanitizar_para_filename(_texto(obra.nome, "Obra")) or "SEM_NOME"
         codigo_sanitized = _sanitizar_para_filename(_texto(obra.codigo, "SEM_CODIGO")) or "SEM_CODIGO"
         filename = f"relatorio_{nome_sanitized}_{codigo_sanitized}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         filepath = downloads_dir / filename
@@ -863,22 +876,16 @@ class ReportLabPDFService:
 
         # 4. Lancamentos
         if lancamentos:
-            # Filtrar lancamentos sem tipo para evitar warnings
-            lancamentos_validos = [
-                l for l in lancamentos
-                if getattr(l, "tipo_nome", None) and l.tipo_nome.strip()
-            ]
-            
-            if lancamentos_validos:
-                lancamentos_data = [
-                    [
-                        _formatar_data(l.data_lancamento),
-                        _texto(l.descricao, "Sem descrição").upper(),
-                        _texto(l.tipo_nome, "Não informado"),
-                        _formatar_moeda(l.valor_total),
-                    ]
-                    for l in lancamentos_validos
+            lancamentos_data = [
+                [
+                    _formatar_data(lanc.data_lancamento),
+                    _texto(lanc.descricao, "Sem descrição").upper(),
+                    _texto(lanc.tipo_nome, "Não informado") or "Não informado",
+                    _formatar_moeda(lanc.valor_total),
                 ]
+                for lanc in lancamentos
+            ]
+            if lancamentos_data:
                 elementos.extend(_build_tabela_padrao(
                     titulo="LANCAMENTOS",
                     colunas=["Data", "Descrição", "Tipo", "Valor"],

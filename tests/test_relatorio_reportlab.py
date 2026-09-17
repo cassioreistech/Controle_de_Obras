@@ -5,7 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from controle_obras.application.reportlab_pdf_service import ReportLabPDFService
+from controle_obras.application.reportlab_pdf_service import (
+    ReportLabPDFService,
+    _formatar_moeda,
+)
 from controle_obras.domain.models import Aditivo, Empresa, Lancamento, Obra
 from controle_obras.infrastructure.database import DatabaseManager
 from controle_obras.infrastructure.repositories import (
@@ -126,3 +129,33 @@ class TestRelatorioReportLab:
         """Verifica que erro é lançado para obra inexistente."""
         with pytest.raises(ValueError, match="Obra .* não encontrada"):
             pdf_service.gerar_relatorio_obra_reportlab(99999)
+
+    def test_lancamento_sem_tipo_incluido_no_pdf(self, pdf_service, tmp_path):
+        """Lancamento sem tipo deve aparecer no PDF (nao ser omitido).
+
+        Regressao: antes, o lancamento sem tipo era filtrado da tabela
+        LANCAMENTOS gerando totais inconsistentes com o resumo financeiro.
+        """
+        import fitz  # pymupdf
+
+        pdf_service._storage._relatorios_dir = tmp_path
+        filepath = pdf_service.gerar_relatorio_obra_reportlab(self._obra.id)
+
+        doc = fitz.open(str(filepath))
+        texto_completo = ""
+        for page in doc:
+            texto_completo += page.get_text()
+        doc.close()
+
+        assert "ACO CA-50" in texto_completo, \
+            "LANCAMENTO sem tipo deveria aparecer na tabela"
+        assert "informado" in texto_completo.lower(), \
+            "Tipo ausente deveria exibir 'Não informado'"
+
+    def test_formatar_moeda_valores_negativos(self):
+        """Moeda negativa deve ter sinal antes do R$."""
+        assert _formatar_moeda(Decimal("-50000.00")) == "-R$ 50.000,00"
+
+    def test_formatar_moeda_precisao_decimal(self):
+        """Valores grandes nao podem perder precisao (sem float)."""
+        assert _formatar_moeda(Decimal("999999999999.99")) == "R$ 999.999.999.999,99"
