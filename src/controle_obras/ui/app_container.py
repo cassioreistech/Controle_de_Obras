@@ -5,7 +5,6 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
-    QApplication,
     QComboBox,
     QDialog,
     QHBoxLayout,
@@ -19,7 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from controle_obras import APP_NAME, COMPANY_NAME, __version__
+from controle_obras import COMPANY_NAME, __version__
 from controle_obras.application.license_service import (
     CHAVE_LICENCA,
     TRIAL_DIAS,
@@ -56,10 +55,8 @@ from controle_obras.ui.lancamentos_screen import LancamentosScreen
 from controle_obras.ui.obra_form_screen import ObraFormScreen
 from controle_obras.ui.obras_list_screen import ObrasListScreen
 from controle_obras.ui.styles import (
-    BACKGROUND,
     PRIMARY,
     SURFACE,
-    TEXT_PRIMARY,
     get_combo_header_style,
     get_header_button_style,
     get_header_style,
@@ -237,7 +234,7 @@ class AppContainer(QMainWindow):
         center_layout.setSpacing(10)
 
         lbl_obra = QLabel("OBRA:")
-        lbl_obra.setStyleSheet(f"""
+        lbl_obra.setStyleSheet("""
             font-size: 14px;
             font-weight: bold;
             padding: 0;
@@ -256,18 +253,18 @@ class AppContainer(QMainWindow):
 
         self.btn_limpar_obra = QPushButton("✕")
         self.btn_limpar_obra.setToolTip("Limpar seleção de obra")
-        self.btn_limpar_obra.setStyleSheet(f"""
-            QPushButton {{
+        self.btn_limpar_obra.setStyleSheet("""
+            QPushButton {
                 padding: 6px 12px;
                 background-color: rgba(255,255,255,0.15);
                 color: white;
                 border-radius: 4px;
                 font-size: 12px;
                 font-weight: bold;
-            }}
-            QPushButton:hover {{
+            }
+            QPushButton:hover {
                 background-color: rgba(220,38,38,0.8);
-            }}
+            }
         """)
         self.btn_limpar_obra.clicked.connect(self._limpar_selecao_obra)
         center_layout.addWidget(self.btn_limpar_obra)
@@ -281,7 +278,7 @@ class AppContainer(QMainWindow):
         right_layout.setSpacing(4)
 
         separator = QLabel("│")
-        separator.setStyleSheet(f"color: rgba(255,255,255,0.2); padding: 0 6px; font-size: 16px;")
+        separator.setStyleSheet("color: rgba(255,255,255,0.2); padding: 0 6px; font-size: 16px;")
         right_layout.addWidget(separator)
 
         self.btn_dashboard = QPushButton("Dashboard")
@@ -376,7 +373,7 @@ class AppContainer(QMainWindow):
                     self.anexo_service,
                     self.storage,
                 )
-                
+
                 obras = self.obra_service.listar()
                 empresa = self.empresa_service.obter()
                 if len(obras) > 0 and empresa and empresa.razao_social:
@@ -422,7 +419,8 @@ class AppContainer(QMainWindow):
 
     def show_dashboard(self) -> None:
         obra_ativa_id = self.config_service.obter_obra_ativa()
-        if obra_ativa_id is None:
+        if obra_ativa_id is None or not self.obra_service.obter(obra_ativa_id):
+            self.config_service.definir_obra_ativa(None)
             self.show_obras_list()
             return
         self._carregar_combo_obras()
@@ -447,13 +445,17 @@ class AppContainer(QMainWindow):
         self.stack.setCurrentWidget(self.anexos_screen)
 
     def set_obra_ativa(self, obra_id: int | None) -> None:
-        self.config_service.definir_obra_ativa(obra_id)
         if obra_id:
             obra = self.obra_service.obter(obra_id)
-            nome = obra.nome if obra else ""
-            self._update_context(nome)
+            if not obra:
+                self.config_service.definir_obra_ativa(None)
+                self._update_context("")
+                return
+            self.config_service.definir_obra_ativa(obra_id)
+            self._update_context(obra.nome)
             self._selecionar_obra_no_combo(obra_id)
         else:
+            self.config_service.definir_obra_ativa(None)
             self._update_context("")
 
     def _selecionar_obra_no_combo(self, obra_id: int) -> None:
@@ -530,7 +532,7 @@ class AppContainer(QMainWindow):
             QMessageBox.critical(self, "Erro", f"Falha ao restaurar backup:\n{str(e)}")
 
     def _abrir_configuracoes(self) -> None:
-        from PySide6.QtWidgets import QFormLayout, QLineEdit, QMessageBox
+        from PySide6.QtWidgets import QFormLayout, QLineEdit
 
         empresa = self.empresa_service.obter()
         self._logo_path_temp = empresa.logo_path if empresa else ""
@@ -761,13 +763,3 @@ class AppContainer(QMainWindow):
             dialog.close()
         except Exception as e:
             QMessageBox.critical(dialog, "Erro", f"Falha ao salvar configurações:\n{str(e)}")
-
-
-def main() -> None:
-    import sys
-
-    app = QApplication(sys.argv)
-    app.setStyle("Fusion")
-    window = AppContainer()
-    window.showMaximized()
-    sys.exit(app.exec())

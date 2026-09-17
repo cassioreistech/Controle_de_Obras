@@ -24,22 +24,11 @@ if TYPE_CHECKING:
     from controle_obras.ui.app_container import AppContainer
 
 from controle_obras.ui.styles import (
-    BACKGROUND,
-    BORDER,
     DANGER,
     DANGER_HOVER,
-    DANGER_LIGHT,
     INFO,
     INFO_HOVER,
     PRIMARY,
-    PRIMARY_HOVER,
-    SUCCESS,
-    SUCCESS_HOVER,
-    SURFACE,
-    TEXT_MUTED,
-    TEXT_PRIMARY,
-    TEXT_SECONDARY,
-    get_action_button_style,
     get_screen_title_style,
     get_success_button_style,
     get_table_style,
@@ -189,19 +178,25 @@ class AnexosScreen(QWidget):
             QMessageBox.warning(self, "Erro", "Arquivo não encontrado no storage.")
 
     def _excluir_anexo(self, anexo_id: int) -> None:
+        if self._obra_id is None:
+            return
         resposta = QMessageBox.question(
             self,
             "Confirmar Exclusão",
             "Deseja realmente excluir este anexo?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
-        if resposta == QMessageBox.StandardButton.Yes:
-            try:
-                self._parent.anexo_service.excluir(anexo_id)
-                QMessageBox.information(self, "Sucesso", "Anexo excluído.")
-                self.carregar(self._obra_id)
-            except Exception as e:
-                QMessageBox.critical(self, "Erro", f"Falha ao excluir anexo:\n{str(e)}")
+        if resposta != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            obra = self._parent.obra_service.obter(self._obra_id)
+            if not obra:
+                return
+            self._parent.anexo_service.excluir(anexo_id, obra_codigo=obra.codigo)
+            QMessageBox.information(self, "Sucesso", "Anexo excluído.")
+            self.carregar(self._obra_id)
+        except Exception as e:
+            QMessageBox.critical(self, "Erro", f"Falha ao excluir anexo:\n{str(e)}")
 
     def _adicionar_anexo(self) -> None:
         if self._obra_id is None:
