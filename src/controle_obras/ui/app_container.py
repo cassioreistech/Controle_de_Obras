@@ -380,11 +380,16 @@ class AppContainer(QMainWindow):
                 obras = self.obra_service.listar()
                 empresa = self.empresa_service.obter()
                 if len(obras) > 0 and empresa and empresa.razao_social:
-                    resultado = backup_service.backup.auto_backup_diario(
+                    quantidade_anexos = (
+                        sum(1 for f in self.storage.anexos_dir.rglob("*") if f.is_file())
+                        if self.storage.anexos_dir.exists()
+                        else 0
+                    )
+                    resultado = backup_service.auto_backup_diario(
                         nome_empresa=empresa.razao_social,
                         versao_sistema=__version__,
                         quantidade_obras=len(obras),
-                        quantidade_anexos=0,
+                        quantidade_anexos=quantidade_anexos,
                     )
                     if resultado:
                         import logging

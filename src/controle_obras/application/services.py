@@ -15,7 +15,6 @@ from controle_obras.domain.models import (
     Obra,
 )
 from controle_obras.domain.value_objects import ResumoFinanceiroObra
-from controle_obras.infrastructure.backup import BackupError
 from controle_obras.infrastructure.backup import BackupService as InfraBackupService
 from controle_obras.infrastructure.backup_history import BackupHistory
 from controle_obras.infrastructure.repositories import (
@@ -280,8 +279,30 @@ class BackupApplicationService:
                 {"arquivo": str(caminho), "obras": len(obras), "anexos": quantidade_anexos},
             )
             return caminho
-        except BackupError as exc:
+        except Exception as exc:
             self._history.registrar("backup", "falha", {"erro": str(exc)})
+            raise
+
+    def auto_backup_diario(
+        self,
+        nome_empresa: str,
+        versao_sistema: str,
+        quantidade_obras: int,
+        quantidade_anexos: int,
+    ) -> Path | None:
+        """Cria o backup diário automático (se ainda não existir hoje)."""
+        try:
+            caminho = self._backup_service.auto_backup_diario(
+                nome_empresa=nome_empresa,
+                versao_sistema=versao_sistema,
+                quantidade_obras=quantidade_obras,
+                quantidade_anexos=quantidade_anexos,
+            )
+            if caminho:
+                self._history.registrar("backup_auto", "concluido", {"arquivo": str(caminho)})
+            return caminho
+        except Exception as exc:
+            self._history.registrar("backup_auto", "falha", {"erro": str(exc)})
             raise
 
     def restaurar_backup(self, caminho_zip: Path | str) -> dict[str, Any]:
@@ -290,7 +311,7 @@ class BackupApplicationService:
             manifest = self._backup_service.restaurar_backup(caminho_zip)
             self._history.registrar("restauracao", "concluida", {"arquivo": str(caminho_zip)})
             return manifest
-        except BackupError as exc:
+        except Exception as exc:
             self._history.registrar("restauracao", "falha", {"erro": str(exc)})
             raise
 

@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 import shutil
 import sqlite3
 import tempfile
@@ -54,6 +53,10 @@ class BackupService:
         destino_path = Path(destino)
         destino_path.mkdir(parents=True, exist_ok=True)
         caminho_zip = destino_path / nome_arquivo
+        contador = 2
+        while caminho_zip.exists():
+            caminho_zip = destino_path / f"backup_{timestamp}_{contador}.zip"
+            contador += 1
 
         try:
             # 1. Verificar integridade do banco ANTES do backup
@@ -216,11 +219,18 @@ class BackupService:
     ) -> Path | None:
         """Cria backup automático ao iniciar o app, mas só se não houver backup de hoje."""
         backup_dir = self.storage.base_dir / "data" / "backups"
+        backup_dir.mkdir(parents=True, exist_ok=True)
         hoje = datetime.now().strftime("%Y-%m-%d")
         
-        # Verificar se já existe backup de hoje
+        # Verificar se já existe backup diário de hoje (backups de segurança não contam)
         for bkp in backup_dir.iterdir():
-            if bkp.is_file() and bkp.suffix == ".zip" and hoje in bkp.name:
+            if (
+                bkp.is_file()
+                and bkp.suffix == ".zip"
+                and bkp.name.startswith("backup_")
+                and "seguranca" not in bkp.name
+                and hoje in bkp.name
+            ):
                 logger.info("Backup diário já existe: %s", bkp.name)
                 return None
         
@@ -296,6 +306,7 @@ class BackupService:
                 zf.extractall(tmp_path)
 
                 db_backup = tmp_path / "database" / "app.db"
+                self._validar_hash_database(manifest, db_backup)
                 self._restaurar_database(db_backup)
 
                 self.db.init_schema()
@@ -364,6 +375,21 @@ class BackupService:
         if manifest.get("backup_version") != BACKUP_VERSION:
             versao = manifest.get("backup_version")
             logger.warning("Versão de backup diferente: %s (esperado: %s)", versao, BACKUP_VERSION)
+
+    def _validar_hash_database(self, manifest: dict[str, Any], db_backup: Path) -> None:
+        """Rejeita backup cujo banco não confere com o hash registrado no manifesto.
+
+        Executada ANTES de qualquer alteração no sistema, para não deixar
+        estado parcial em caso de falha.
+        """
+        expected = manifest.get("hash_database")
+        if not expected:
+            return
+        actual = FileHasher.sha256_file(db_backup)
+        if actual != expected:
+            raise RestoreValidationError(
+                "Backup inválido: hash do banco de dados não confere com o manifesto."
+            )
 
     def _fechar_conexoes_sqlite(self) -> None:
         """Fecha conexões ativas com o banco antes da restauração."""
@@ -442,26 +468,20 @@ class BackupService:
 
     def _verificar_logos(self) -> None:
         """Atualiza logo_path no DB caso aponte para origem antiga."""
-        import os
-        conn = sqlite3.connect(str(self.db.db_path))
-        try:
+        with self.db.get_connection() as conn:
             row = conn.execute("SELECT id, logo_path FROM empresa LIMIT 1").fetchone()
             if row and row["logo_path"]:
                 old_path = row["logo_path"]
                 # Se o arquivo não existe mais, tenta encontrar no logos_dir
-                if old_path and not os.path.exists(old_path):
-                    import glob
-                    matches = glob.glob(str(self.storage.logos_dir / "logo*"))
+                if not Path(old_path).exists():
+                    matches = list(self.storage.logos_dir.glob("logo*"))
                     if matches:
-                        new_path = matches[0]
+                        new_path = str(matches[0])
                         conn.execute(
                             "UPDATE empresa SET logo_path=? WHERE id=?",
                             (new_path, row["id"]),
                         )
-                        conn.commit()
                         logger.info("Logo atualizado para: %s", new_path)
-        finally:
-            conn.close()
 
     def _criar_backup_seguranca(self) -> Path:
         """Cria backup automático do estado atual antes de restaurar."""
