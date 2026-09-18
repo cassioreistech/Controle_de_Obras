@@ -25,7 +25,8 @@ Sistema desktop para controle financeiro e documental de obras de engenharia civ
 ### Fase 2 — Refinamentos Operacionais
 **Objetivo:** Melhorar usabilidade, buscas, filtros e relatórios.
 
-**Entregáveis (futuro):**
+**Entregáveis:**
+- Sistema de controle de seriais de licença
 - Filtros avançados em obras e lançamentos
 - Relatórios adicionais
 - Backup/exportação de dados

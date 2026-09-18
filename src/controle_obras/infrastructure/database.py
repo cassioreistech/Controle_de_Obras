@@ -114,6 +114,21 @@ CREATE TABLE IF NOT EXISTS configuracoes (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS seriais (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chave TEXT NOT NULL UNIQUE,
+    cliente_nome TEXT,
+    cliente_empresa TEXT,
+    cliente_contato TEXT,
+    maquina_id TEXT NOT NULL,
+    data_geracao DATE NOT NULL,
+    data_validade DATE NOT NULL,
+    status TEXT DEFAULT 'Ativo',
+    observacoes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 INSERT OR IGNORE INTO tipos_lancamento (nome, ordem_exibicao) VALUES
     ('Material', 1),
     ('Mao de obra', 2),

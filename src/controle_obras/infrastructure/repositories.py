@@ -13,6 +13,7 @@ from controle_obras.domain.models import (
     Lancamento,
     Obra,
     RelatorioGerado,
+    Serial,
     TipoLancamento,
 )
 from controle_obras.infrastructure.database import DatabaseManager
@@ -545,3 +546,105 @@ class RelatorioRepository(BaseRepository[RelatorioGerado]):
             )
             for row in rows
         ]
+
+
+class SerialRepository(BaseRepository[Serial]):
+    """Repositório para Serial de licença."""
+
+    def save(self, serial: Serial) -> Serial:
+        data = {
+            "chave": serial.chave,
+            "cliente_nome": serial.cliente_nome,
+            "cliente_empresa": serial.cliente_empresa,
+            "cliente_contato": serial.cliente_contato,
+            "maquina_id": serial.maquina_id,
+            "data_geracao": serial.data_geracao.isoformat(),
+            "data_validade": serial.data_validade.isoformat(),
+            "status": serial.status,
+            "observacoes": serial.observacoes,
+            "updated_at": datetime.now().isoformat(),
+        }
+
+        with self._db.get_connection() as conn:
+            if serial.id:
+                conn.execute(
+                    """
+                    UPDATE seriais SET chave=:chave, cliente_nome=:cliente_nome,
+                        cliente_empresa=:cliente_empresa, cliente_contato=:cliente_contato,
+                        maquina_id=:maquina_id, data_geracao=:data_geracao,
+                        data_validade=:data_validade, status=:status,
+                        observacoes=:observacoes, updated_at=:updated_at
+                    WHERE id=:id
+                    """,
+                    {**data, "id": serial.id},
+                )
+            else:
+                cursor = conn.execute(
+                    """
+                    INSERT INTO seriais (chave, cliente_nome, cliente_empresa, cliente_contato,
+                        maquina_id, data_geracao, data_validade, status, observacoes, updated_at)
+                    VALUES (:chave, :cliente_nome, :cliente_empresa, :cliente_contato,
+                        :maquina_id, :data_geracao, :data_validade, :status, :observacoes, :updated_at)
+                    """,
+                    data,
+                )
+                serial.id = cursor.lastrowid
+        return serial
+
+    def get_by_id(self, serial_id: int) -> Serial | None:
+        row = self._db.execute("SELECT * FROM seriais WHERE id=?", (serial_id,)).fetchone()
+        if not row:
+            return None
+        return self._row_to_serial(row)
+
+    def get_by_chave(self, chave: str) -> Serial | None:
+        row = self._db.execute(
+            "SELECT * FROM seriais WHERE chave=?", (chave.upper(),)
+        ).fetchone()
+        if not row:
+            return None
+        return self._row_to_serial(row)
+
+    def list_all(self) -> list[Serial]:
+        rows = self._db.execute("SELECT * FROM seriais ORDER BY data_geracao DESC").fetchall()
+        return [self._row_to_serial(row) for row in rows]
+
+    def list_by_status(self, status: str) -> list[Serial]:
+        rows = self._db.execute(
+            "SELECT * FROM seriais WHERE status=? ORDER BY data_geracao DESC", (status,)
+        ).fetchall()
+        return [self._row_to_serial(row) for row in rows]
+
+    def list_by_cliente(self, cliente_nome: str) -> list[Serial]:
+        rows = self._db.execute(
+            "SELECT * FROM seriais WHERE cliente_nome LIKE ? ORDER BY data_geracao DESC",
+            (f"%{cliente_nome}%",),
+        ).fetchall()
+        return [self._row_to_serial(row) for row in rows]
+
+    def delete(self, serial_id: int) -> None:
+        self._db.execute("DELETE FROM seriais WHERE id=?", (serial_id,))
+
+    def count_by_status(self) -> dict[str, int]:
+        """Retorna contagem de seriais por status."""
+        rows = self._db.execute(
+            "SELECT status, COUNT(*) as total FROM seriais GROUP BY status"
+        ).fetchall()
+        return {row["status"]: row["total"] for row in rows}
+
+    @staticmethod
+    def _row_to_serial(row: sqlite3.Row) -> Serial:
+        return Serial(
+            id=row["id"],
+            chave=row["chave"],
+            cliente_nome=row["cliente_nome"] or "",
+            cliente_empresa=row["cliente_empresa"] or "",
+            cliente_contato=row["cliente_contato"] or "",
+            maquina_id=row["maquina_id"],
+            data_geracao=_to_date(row["data_geracao"]) or date.today(),
+            data_validade=_to_date(row["data_validade"]) or date.today(),
+            status=row["status"],
+            observacoes=row["observacoes"] or "",
+            created_at=datetime.fromisoformat(row["created_at"]),
+            updated_at=datetime.fromisoformat(row["updated_at"]),
+        )

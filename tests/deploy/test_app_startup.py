@@ -38,10 +38,10 @@ def test_app_inicializa_com_servicos(app_startup):
 
 
 def test_app_cria_todas_as_telas(app_startup):
-    """AppContainer cria as 7 telas e as adiciona ao stack."""
+    """AppContainer cria as 8 telas e as adiciona ao stack."""
     container = AppContainer()
 
-    assert container.stack.count() == 7
+    assert container.stack.count() == 8
     assert container.welcome_screen is not None
     assert container.empresa_screen is not None
     assert container.obras_list_screen is not None
@@ -49,6 +49,7 @@ def test_app_cria_todas_as_telas(app_startup):
     assert container.dashboard_screen is not None
     assert container.lancamentos_screen is not None
     assert container.anexos_screen is not None
+    assert container.serials_screen is not None
 
 
 def test_app_gera_logs_sem_erros(app_startup, tmp_path: Path):

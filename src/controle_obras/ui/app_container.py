@@ -36,6 +36,7 @@ from controle_obras.application.services import (
     RelatorioPDFService,
     TipoLancamentoService,
 )
+from controle_obras.application.serial_service import SerialService
 from controle_obras.infrastructure.database import DatabaseManager
 from controle_obras.infrastructure.repositories import (
     AditivoRepository,
@@ -45,6 +46,7 @@ from controle_obras.infrastructure.repositories import (
     LancamentoRepository,
     ObraRepository,
     RelatorioRepository,
+    SerialRepository,
     TipoLancamentoRepository,
 )
 from controle_obras.infrastructure.storage import AppStorage
@@ -54,6 +56,7 @@ from controle_obras.ui.empresa_screen import EmpresaScreen
 from controle_obras.ui.lancamentos_screen import LancamentosScreen
 from controle_obras.ui.obra_form_screen import ObraFormScreen
 from controle_obras.ui.obras_list_screen import ObrasListScreen
+from controle_obras.ui.serials_screen import SerialsScreen
 from controle_obras.ui.styles import (
     PRIMARY,
     SURFACE,
@@ -158,6 +161,7 @@ class AppContainer(QMainWindow):
         self.tipo_lancamento_service = TipoLancamentoService(TipoLancamentoRepository(self.db))
         self.config_service = ConfiguracaoSistemaService(ConfiguracaoRepository(self.db))
         self.licenca_service = LicencaService(ConfiguracaoRepository(self.db))
+        self.serial_service = SerialService(SerialRepository(self.db))
         self.resumo_service = ObraResumoService(
             ObraRepository(self.db),
             AditivoRepository(self.db),
@@ -195,6 +199,7 @@ class AppContainer(QMainWindow):
         self.dashboard_screen = DashboardScreen(self)
         self.lancamentos_screen = LancamentosScreen(self)
         self.anexos_screen = AnexosScreen(self)
+        self.serials_screen = SerialsScreen(self)
 
         self.stack.addWidget(self.welcome_screen)
         self.stack.addWidget(self.empresa_screen)
@@ -203,6 +208,7 @@ class AppContainer(QMainWindow):
         self.stack.addWidget(self.dashboard_screen)
         self.stack.addWidget(self.lancamentos_screen)
         self.stack.addWidget(self.anexos_screen)
+        self.stack.addWidget(self.serials_screen)
 
     def _build_header(self) -> QWidget:
         header = QWidget()
@@ -306,6 +312,12 @@ class AppContainer(QMainWindow):
         self.btn_config.clicked.connect(self._abrir_configuracoes)
         self.btn_config.setStyleSheet(get_header_button_style())
         right_layout.addWidget(self.btn_config)
+
+        self.btn_seriais = QPushButton("Seriais")
+        self.btn_seriais.setToolTip("Gerenciar seriais de licença")
+        self.btn_seriais.clicked.connect(self.show_seriais)
+        self.btn_seriais.setStyleSheet(get_header_button_style())
+        right_layout.addWidget(self.btn_seriais)
 
         main_layout.addLayout(right_layout)
 
@@ -443,6 +455,10 @@ class AppContainer(QMainWindow):
             return
         self.anexos_screen.carregar(obra_ativa_id)
         self.stack.setCurrentWidget(self.anexos_screen)
+
+    def show_seriais(self) -> None:
+        self.serials_screen._atualizar_lista()
+        self.stack.setCurrentWidget(self.serials_screen)
 
     def set_obra_ativa(self, obra_id: int | None) -> None:
         if obra_id:

@@ -135,3 +135,21 @@ class Configuracao:
     valor: str = ""
     descricao: str = ""
     updated_at: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class Serial:
+    """Serial de licença gerado para um cliente."""
+
+    id: int | None = None
+    chave: str = ""
+    cliente_nome: str = ""
+    cliente_empresa: str = ""
+    cliente_contato: str = ""
+    maquina_id: str = ""
+    data_geracao: date = field(default_factory=date.today)
+    data_validade: date = field(default_factory=date.today)
+    status: str = "Ativo"
+    observacoes: str = ""
+    created_at: datetime = field(default_factory=datetime.now)
+    updated_at: datetime = field(default_factory=datetime.now)
