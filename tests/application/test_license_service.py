@@ -19,7 +19,7 @@ MAQUINA = obter_maquina_id()
 def test_gerar_chave_roundtrip():
     validade = date(2026, 12, 31)
     chave = gerar_chave(validade, MAQUINA)
-    assert len(chave) == 14
+    assert len(chave) == 15  # 8 data + 1 hifen + 6 checksum
     assert chave[8] == "-"
     assert validar_chave(chave, MAQUINA) == validade
 
@@ -87,7 +87,8 @@ def test_chave_valida_libera(tmp_path):
     repo = _repo(tmp_path)
     service = LicencaService(repo)
     chave = gerar_chave(date.today() + timedelta(days=30), MAQUINA)
-    assert service.registrar_chave(chave) is True
+    sucesso, mensagem = service.registrar_chave(chave)
+    assert sucesso is True
     status = service.verificar()
     assert status.tipo == "LICENCIADO"
     assert status.dias_restantes == 30
@@ -96,7 +97,8 @@ def test_chave_valida_libera(tmp_path):
 def test_chave_invalida_nao_registra(tmp_path):
     repo = _repo(tmp_path)
     service = LicencaService(repo)
-    assert service.registrar_chave("CHAVE-ERRADA") is False
+    sucesso, mensagem = service.registrar_chave("CHAVE-ERRADA")
+    assert sucesso is False
     assert repo.get(CHAVE_LICENCA) is None
 
 
@@ -104,7 +106,8 @@ def test_chave_expirada_bloqueia(tmp_path):
     repo = _repo(tmp_path)
     service = LicencaService(repo)
     chave = gerar_chave(date.today() - timedelta(days=1), MAQUINA)
-    assert service.registrar_chave(chave) is True
+    sucesso, mensagem = service.registrar_chave(chave)
+    assert sucesso is True  # Chave e valida (assinatura correta), mas expirada
     status = service.verificar()
     assert status.tipo == "CHAVE_EXPIRADA"
 
