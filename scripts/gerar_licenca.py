@@ -46,6 +46,8 @@ def main() -> None:
     print(f"  {chave}")
     print(f"  Valida ate: {validade.isoformat()}")
     print(f"  Maquina: {maquina_id}\n")
+    print("Para registrar esta chave no sistema de controle, use:")
+    print(f"  python scripts/gerenciar_seriais.py registrar --chave {chave} --cliente \"NOME\" --empresa \"EMPRESA\" --maquina {maquina_id} --validade {validade.isoformat()}")
 
 
 if __name__ == "__main__":
