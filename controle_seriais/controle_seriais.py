@@ -96,40 +96,104 @@ _SECRETO_HEX = bytes.fromhex(
 SECRETO_LICENCA = _SECRETO_HEX.decode("utf-8")
 
 
+_SEGREDO_INTEGRIDADE = "CONTROLE-OBRAS-INTEGRITY-CHECK-2026"
+
+
+def _obter_machineguid() -> str:
+    """Obtem MachineGuid do Windows."""
+    if sys.platform != "win32":
+        return ""
+    try:
+        import winreg
+        with winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\Microsoft\Cryptography",
+            0,
+            winreg.KEY_READ | winreg.KEY_WOW64_64KEY,
+        ) as chave:
+            valor, _ = winreg.QueryValueEx(chave, "MachineGuid")
+            return valor
+    except (OSError, FileNotFoundError):
+        return ""
+
+
+def _obter_mac_address() -> str:
+    """Obtem endereco MAC da placa de rede."""
+    mac = uuid.getnode()
+    return ':'.join(f'{(mac >> i) & 0xff:02x}' for i in range(0, 48, 8))
+
+
+def _obter_hostname() -> str:
+    """Obtem nome da maquina."""
+    import platform
+    return platform.node()
+
+
+def _obter_disk_serial() -> str:
+    """Obtem serial do disco rigido (Windows)."""
+    if sys.platform != "win32":
+        return ""
+    try:
+        import subprocess
+        resultado = subprocess.run(
+            ["wmic", "diskdrive", "get", "serialnumber"],
+            capture_output=True, text=True, timeout=5
+        )
+        linhas = resultado.stdout.strip().split('\n')
+        if len(linhas) > 1:
+            return linhas[1].strip()
+    except Exception:
+        pass
+    return ""
+
+
+def _hash_of(texto: str) -> str:
+    """Gera hash seguro e deterministico."""
+    salted = f"{_SEGREDO_INTEGRIDADE}:{texto}:{_SEGREDO_INTEGRIDADE}"
+    return hashlib.sha256(salted.encode("utf-8")).hexdigest()[:8].upper()
+
+
 def obter_maquina_id() -> str:
-    """Retorna ID da máquina (compatível com o sistema principal)."""
-    maquina_id = ""
-    if sys.platform == "win32":
-        try:
-            import winreg
-            with winreg.OpenKey(
-                winreg.HKEY_LOCAL_MACHINE,
-                r"SOFTWARE\Microsoft\Cryptography",
-                0,
-                winreg.KEY_READ | winreg.KEY_WOW64_64KEY,
-            ) as chave:
-                maquina_id, _ = winreg.QueryValueEx(chave, "MachineGuid")
-        except OSError:
-            maquina_id = ""
-    
-    if not maquina_id:
-        maquina_id = str(uuid.getnode())
-    
-    return hashlib.sha256(maquina_id.encode("utf-8")).hexdigest()[:6].upper()
+    """Gera ID composto da maquina (identico ao sistema principal)."""
+    componentes = []
+
+    machineguid = _obter_machineguid()
+    if machineguid:
+        componentes.append(f"MG:{machineguid}")
+
+    mac = _obter_mac_address()
+    componentes.append(f"MAC:{mac}")
+
+    hostname = _obter_hostname()
+    componentes.append(f"HOST:{hostname}")
+
+    disk_serial = _obter_disk_serial()
+    if disk_serial:
+        componentes.append(f"DISK:{disk_serial}")
+
+    if not componentes:
+        componentes.append(f"FALLBACK:{uuid.getnode()}")
+
+    payload = "|".join(sorted(componentes))
+    return _hash_of(payload)
 
 
 def _checksum(validade: date, maquina_id: str) -> str:
-    payload = f"CONTROLE-OBRAS|{validade.isoformat()}|{maquina_id}"
+    """Gera checksum HMAC robusto (identico ao sistema principal)."""
+    payload = f"CONTROLE-OBRAS|{validade.isoformat()}|{maquina_id}|v2"
     digest = hmac.new(
         SECRETO_LICENCA.encode("utf-8"),
         payload.encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
-    return digest[:5].upper()
+    return digest[:6].upper()
 
 
 def gerar_chave(validade: date, maquina_id: str) -> str:
-    """Gera chave de licença (mesma lógica do sistema principal)."""
+    """Gera chave de licença (mesma lógica do sistema principal).
+    
+    Formato: YYYYMMDD-XXXXXX (data + checksum de 6 caracteres = 15 chars)
+    """
     return f"{validade.strftime('%Y%m%d')}-{_checksum(validade, maquina_id)}"
 
 
