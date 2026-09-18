@@ -1,0 +1,69 @@
+===============================================
+   SISTEMA PORTATIL DE SERIAIS
+   Controle de Obras
+===============================================
+
+COMO USAR:
+----------
+
+1. DOUBLE-CLIQUE EM "iniciar.bat" para abrir o menu
+
+2. OU USE O PROMPT DE COMANDO:
+
+   cd controle_seriais
+   
+   Listar todos os seriais:
+   python controle_seriais.py listar
+   
+   Registrar serial para cliente:
+   python controle_seriais.py registrar --chave 20261231-ABC12 --cliente "Joao Silva" --empresa "Construtora ABC" --validade 2026-12-31
+   
+   Buscar serial:
+   python controle_seriais.py buscar 20261231-ABC12
+   
+   Atualizar status:
+   python controle_seriais.py status 20261231-ABC12 Inativo
+   
+   Excluir serial:
+   python controle_seriais.py excluir 1
+   
+   Ver estatisticas:
+   python controle_seriais.py estatisticas
+   
+   Gerar nova chave:
+   python controle_seriais.py gerar 2026-12-31 --maquina ABC123
+
+FLUXO DE TRABALHO:
+------------------
+
+1. Cliente instala o sistema "Controle de Obras"
+2. Cliente abre o sistema vai em Configuracoes > copia o "ID da Maquina"
+3. Cliente envia o ID da maquina para voce
+4. Voce gera a chave: python controle_seriais.py gerar 2026-12-31 --maquina ID_CLIENTE
+5. Voce registra no controle: python controle_seriais.py registrar --chave CHAVE --cliente NOME --validade 2026-12-31
+6. Voce envia a chave para o cliente
+
+ARQUIVOS:
+---------
+
+- controle_seriais.py  → Script principal (Python)
+- iniciar.bat          → Menu interativo (Windows)
+- seriais.bat          → Execucao rapida
+- seriais.db           → Banco de dados (criado automaticamente)
+
+NOTAS:
+------
+
+- Este sistema e INDEPENDENTE do sistema principal
+- Pode ser copiado para qualquer maquina com Python instalado
+- O banco de dados (seriais.db) fica na mesma pasta
+- As chaves geradas sao COMPATIVEIS com o sistema principal
+- Mantenha esta pasta em local SEGURO
+
+REQUISITOS:
+-----------
+
+- Python 3.10 ou superior
+- Nenhuma biblioteca externa necessaria (usa apenas modulos padrao)
+
+===============================================
