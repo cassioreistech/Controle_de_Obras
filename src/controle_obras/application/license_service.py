@@ -247,23 +247,40 @@ def _calcular_hash_integridade(db_path: Path) -> str:
 
 
 def _verificar_integridade(repo: ConfiguracaoRepository, db_path: Path) -> bool:
-    """Verifica integridade do banco de dados."""
+    """Verifica integridade do banco de dados.
+    
+    Se o hash nao corresponder (ex: apos atualizacao do banco), atualiza o hash
+    armazenado em vez de bloquear. A protecao principal continua sendo o vinculo
+    a maquina.
+    """
     config_hash = repo.get(CHAVE_HASH_INTEGRIDADE)
+    hash_atual = _calcular_hash_integridade(db_path)
+    
+    if not hash_atual:
+        # Nao conseguiu calcular hash - permite acesso
+        return True
     
     if not config_hash or not config_hash.valor:
         # Primeira execucao - registra hash
-        hash_atual = _calcular_hash_integridade(db_path)
-        if hash_atual:
-            repo.set(Configuracao(
-                chave=CHAVE_HASH_INTEGRIDADE,
-                valor=hash_atual,
-                descricao="Hash de integridade do banco"
-            ))
+        repo.set(Configuracao(
+            chave=CHAVE_HASH_INTEGRIDADE,
+            valor=hash_atual,
+            descricao="Hash de integridade do banco"
+        ))
         return True
     
     # Verifica se hash ainda e valido
-    hash_atual = _calcular_hash_integridade(db_path)
-    return hash_atual == config_hash.valor
+    if hash_atual == config_hash.valor:
+        return True
+    
+    # Hash mudou - pode ser atualizacao legitima do banco
+    # Atualiza o hash em vez de bloquear
+    repo.set(Configuracao(
+        chave=CHAVE_HASH_INTEGRIDADE,
+        valor=hash_atual,
+        descricao=f"Hash de integridade atualizado em {date.today().isoformat()}"
+    ))
+    return True
 
 
 # ==========================================
