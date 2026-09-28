@@ -3,13 +3,18 @@
 from datetime import date, timedelta
 
 from controle_obras.application.license_service import (
+    CHAVE_DATA_ATIVACAO,
     CHAVE_LICENCA,
+    CHAVE_MAQUINA_REGISTRADA,
     CHAVE_PRIMEIRO_USO,
     TRIAL_DIAS,
     LicencaService,
+    _checksum_legado,
+    _maquina_id_legado,
     gerar_chave,
     obter_maquina_id,
     validar_chave,
+    validar_chave_legado,
 )
 from controle_obras.domain.models import Configuracao
 
@@ -110,6 +115,76 @@ def test_chave_expirada_bloqueia(tmp_path):
     assert sucesso is True  # Chave e valida (assinatura correta), mas expirada
     status = service.verificar()
     assert status.tipo == "CHAVE_EXPIRADA"
+
+
+# ==========================================
+# Testes legado (compatibilidade pre-v2)
+# ==========================================
+
+
+def _gerar_chave_legado(validade: date, maquina_id: str) -> str:
+    """Gera uma chave no formato legado (5-char checksum, com traço)."""
+    return f"{validade.strftime('%Y%m%d')}-{_checksum_legado(validade, maquina_id)}"
+
+
+def test_chave_legado_roundtrip():
+    """Chave legado valida com o algoritmo antigo."""
+    maquina_legado = _maquina_id_legado()
+    validade = date(2027, 6, 30)
+    chave = _gerar_chave_legado(validade, maquina_legado)
+    assert len(chave) == 14  # 8 data + 1 hifen + 5 checksum
+    assert chave[8] == "-"
+    assert validar_chave_legado(chave) == validade
+
+
+def test_chave_legado_rejeitada_pelo_novo_algoritmo():
+    """Chave legado NAO valida pelo algoritmo novo (checksum diferente)."""
+    maquina_legado = _maquina_id_legado()
+    validade = date(2027, 6, 30)
+    chave = _gerar_chave_legado(validade, maquina_legado)
+    assert validar_chave(chave, maquina_legado) is None
+
+
+def test_chave_legado_migra_para_novo_formato(tmp_path):
+    """Ao verificar uma chave legado, o sistema migra automaticamente."""
+    repo = _repo(tmp_path)
+    service = LicencaService(repo)
+
+    maquina_legado = _maquina_id_legado()
+    validade = date.today() + timedelta(days=60)
+    chave = _gerar_chave_legado(validade, maquina_legado)
+
+    # Simular estado antigo: chave gravada sem machine_registrada/data_ativacao
+    repo.set(Configuracao(chave=CHAVE_LICENCA, valor=chave))
+
+    status = service.verificar()
+    assert status.tipo == "LICENCIADO"
+    assert status.dias_restantes == 60
+
+    # Verificar que migracao gravou os campos que faltavam
+    assert repo.get(CHAVE_MAQUINA_REGISTRADA) is not None
+    assert repo.get(CHAVE_DATA_ATIVACAO) is not None
+
+
+def test_anti_drift_maquina_registrada(tmp_path):
+    """Se a maquina mudou (drift), chave valida contra a maquina registrada."""
+    repo = _repo(tmp_path)
+    service = LicencaService(repo)
+
+    validade = date.today() + timedelta(days=30)
+    chave = gerar_chave(validade, MAQUINA)
+    sucesso, _ = service.registrar_chave(chave)
+    assert sucesso is True
+
+    # Simular drift: mudar a maquina registrada
+    repo.set(Configuracao(
+        chave=CHAVE_MAQUINA_REGISTRADA,
+        valor="OUTRA_MAQUINA_QUE_NAO_A_ATUAL",
+    ))
+
+    # A chave continua valida via anti-drift
+    status = service.verificar()
+    assert status.tipo == "LICENCIADO"
 
 
 def _repo(tmp_path):

@@ -161,6 +161,63 @@ def _hash_of(texto: str) -> str:
 
 
 # ==========================================
+# COMPATIBILIDADE LEGADA (chaves pre-v2)
+# ==========================================
+
+def _maquina_id_legado() -> str:
+    """Reproduz o ID da maquina do algoritmo legado (pre-v2).
+
+    Usava apenas MachineGuid com hash sem salt e 6 caracteres.
+    """
+    mg = ""
+    if os.name == "nt":
+        try:
+            import winreg  # type: ignore
+            with winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE,
+                r"SOFTWARE\Microsoft\Cryptography",
+                0,
+                winreg.KEY_READ | winreg.KEY_WOW64_64KEY,
+            ) as chave:
+                mg, _ = winreg.QueryValueEx(chave, "MachineGuid")
+        except (OSError, FileNotFoundError):
+            mg = ""
+    if not mg:
+        mg = str(uuid.getnode())
+    return hashlib.sha256(mg.encode("utf-8")).hexdigest()[:6].upper()
+
+
+def _checksum_legado(validade: date, maquina_id: str) -> str:
+    """Checksum HMAC legado: 5 caracteres, sem sufixo |v2."""
+    payload = f"CONTROLE-OBRAS|{validade.isoformat()}|{maquina_id}"
+    digest = hmac.new(
+        SECRETO_LICENCA.encode("utf-8"),
+        payload.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return digest[:5].upper()
+
+
+def validar_chave_legado(chave: str) -> date | None:
+    """Valida chave no formato legado (pre-v2).
+
+    Formato: YYYYMMDD-XXXXX (5-char checksum, com traço).
+    """
+    chave = chave.strip().upper().replace(" ", "")
+    if len(chave) != 14 or chave[8] != "-":
+        return None
+    try:
+        validade = datetime.strptime(chave[:8], "%Y%m%d").date()
+    except ValueError:
+        return None
+    if not hmac.compare_digest(
+        _checksum_legado(validade, _maquina_id_legado()), chave[9:]
+    ):
+        return None
+    return validade
+
+
+# ==========================================
 # GERACAO E VALIDACAO DE CHAVES
 # ==========================================
 
@@ -440,18 +497,41 @@ class LicencaService:
         config_chave: Configuracao,
         maquina_id: str,
     ) -> StatusLicenca:
-        """Verifica chave ja registrada."""
+        """Verifica chave ja registrada (com fallback legado e anti-drift)."""
         chave = config_chave.valor
         hoje = date.today()
-        
-        # Validar chave
+
+        # 1. Validar com algoritmo atual
         validade = validar_chave(chave, maquina_id)
-        
+
+        # 2. Anti-drift: se mudou hardware, validar contra a maquina registrada
         if validade is None:
-            # Chave invalida - pode ser de outra maquina
-            # Verificar se e de outra maquina
             config_maquina = self._repo.get(CHAVE_MAQUINA_REGISTRADA)
-            if config_maquina and config_maquina.valor != maquina_id:
+            if config_maquina and config_maquina.valor:
+                validade = validar_chave(chave, config_maquina.valor)
+
+        # 3. Fallback legado: aceitar chaves geradas antes do v2
+        if validade is None:
+            validade = validar_chave_legado(chave)
+            if validade is not None:
+                # Migrar: gravar maquina e data de ativacao que faltavam
+                if not self._repo.get(CHAVE_MAQUINA_REGISTRADA):
+                    self._repo.set(Configuracao(
+                        chave=CHAVE_MAQUINA_REGISTRADA,
+                        valor=maquina_id,
+                        descricao=f"Maquina migrada do legado: {maquina_id}"
+                    ))
+                if not self._repo.get(CHAVE_DATA_ATIVACAO):
+                    self._repo.set(Configuracao(
+                        chave=CHAVE_DATA_ATIVACAO,
+                        valor=hoje.isoformat(),
+                        descricao=f"Data de migracao: {hoje}"
+                    ))
+
+        # 4. Nenhum metodo validou
+        if validade is None:
+            config_maquina = self._repo.get(CHAVE_MAQUINA_REGISTRADA)
+            if config_maquina and config_maquina.valor and config_maquina.valor != maquina_id:
                 return StatusLicenca(
                     "MAQUINA_INCORRETA",
                     mensagem="Esta chave pertence a outra maquina."
@@ -460,7 +540,7 @@ class LicencaService:
                 "CHAVE_INVALIDA",
                 mensagem="Chave de licenca invalida."
             )
-        
+
         # Chave valida - verificar validade
         if validade < hoje:
             return StatusLicenca(
@@ -468,14 +548,14 @@ class LicencaService:
                 dias_restantes=0,
                 mensagem="Chave de licenca expirada."
             )
-        
+
         # Atualizar ultima verificacao
         self._repo.set(Configuracao(
             chave=CHAVEULTIMA_VERIFICACAO,
             valor=hoje.isoformat(),
             descricao=f"Ultima verificacao: {hoje}"
         ))
-        
+
         dias_restantes = (validade - hoje).days
         return StatusLicenca(
             "LICENCIADO",
@@ -537,8 +617,10 @@ class LicencaService:
         # 3. Obter maquina
         maquina_id = obter_maquina_id()
         
-        # 4. Validar chave
+        # 4. Validar chave (atual + fallback legado)
         validade = validar_chave(chave, maquina_id)
+        if validade is None:
+            validade = validar_chave_legado(chave)
         
         if validade is None:
             # Registrar tentativa falha
