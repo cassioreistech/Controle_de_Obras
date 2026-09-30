@@ -107,6 +107,18 @@ def test_chave_invalida_nao_registra(tmp_path):
     assert repo.get(CHAVE_LICENCA) is None
 
 
+def test_chave_invalida_gravada_cai_no_trial(tmp_path):
+    """Chave salva invalida nao deve travar: cai no trial em vez de bloquear."""
+    repo = _repo(tmp_path)
+    service = LicencaService(repo)
+    # Simula chave corrompida/antiga gravada (ex.: de algoritmo pre-v2)
+    repo.set(Configuracao(chave=CHAVE_LICENCA, valor="20260925-87318"))
+
+    status = service.verificar()
+    assert status.tipo == "EM_TRIAL"
+    assert status.dias_restantes == TRIAL_DIAS
+
+
 def test_chave_expirada_bloqueia(tmp_path):
     repo = _repo(tmp_path)
     service = LicencaService(repo)

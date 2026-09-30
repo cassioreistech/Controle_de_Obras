@@ -487,8 +487,14 @@ class LicencaService:
         # 4. Verificar chave existente
         config_chave = self._repo.get(CHAVE_LICENCA)
         if config_chave and config_chave.valor:
-            return self._verificar_chave_existente(config_chave, maquina_id)
-        
+            status = self._verificar_chave_existente(config_chave, maquina_id)
+            # Chave salva invalida (corrompida ou gerada por algoritmo antigo que
+            # nao casa mais) NAO deve travar o usuario: cai no trial em vez de
+            # bloquear. Chave expirada/outra maquina continuam bloqueando.
+            if status.tipo != "CHAVE_INVALIDA":
+                return status
+            return self._verificar_trial()
+
         # 5. Verificar trial
         return self._verificar_trial()
     

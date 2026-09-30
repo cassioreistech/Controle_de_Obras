@@ -7,7 +7,7 @@
 ; ============================================================
 
 #define MyAppName "Controle de Obras"
-#define MyAppVersion "1.0.3"
+#define MyAppVersion "1.0.4"
 #define MyAppPublisher "CASSIO REIS TECH"
 #define MyAppExeName "ControleDeObras.exe"
 

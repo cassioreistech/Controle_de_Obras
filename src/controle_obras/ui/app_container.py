@@ -5,11 +5,13 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
+    QApplication,
     QComboBox,
     QDialog,
+    QDialogButtonBox,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -146,22 +148,75 @@ class AppContainer(QMainWindow):
             texto = "A chave de licenca informada e invalida.\n\nDigite a chave correta."
 
         while True:
-            chave, ok = QInputDialog.getText(
-                self,
-                "Licenca",
-                texto + "\n\nChave de licenca:",
-            )
-            if not ok:
+            chave = self._dialogo_licenca(texto)
+            if chave is None:
                 return False
-            
+
             sucesso, mensagem = self.licenca_service.registrar_chave(chave)
-            
+
             if sucesso:
                 QMessageBox.information(self, "Licenca", mensagem)
                 self.relatorio_service.set_licenca(chave.strip().upper())
                 return True
-            
-            texto = f"{mensagem}\n\nTente novamente:\n\nChave de licenca:"
+
+            texto = f"{mensagem}\n\nTente novamente."
+
+    def _dialogo_licenca(self, texto: str) -> str | None:
+        """Pede a chave de licenca exibindo o ID da maquina (com botao copiar).
+
+        Retorna a chave digitada ou None se o usuario cancelar.
+        """
+        from controle_obras.application.license_service import obter_maquina_id
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Licenca")
+        dialog.setMinimumWidth(460)
+        layout = QVBoxLayout(dialog)
+
+        lbl_texto = QLabel(texto)
+        lbl_texto.setWordWrap(True)
+        layout.addWidget(lbl_texto)
+
+        maquina_id = obter_maquina_id()
+        id_layout = QHBoxLayout()
+        lbl_id = QLabel(f"ID desta maquina: {maquina_id}")
+        lbl_id.setStyleSheet("font-weight: bold;")
+        id_layout.addWidget(lbl_id, 1)
+
+        btn_copiar = QPushButton("Copiar ID")
+        btn_copiar.setToolTip("Envie este ID para gerar sua chave de licenca")
+
+        def _copiar() -> None:
+            QApplication.clipboard().setText(maquina_id)
+            btn_copiar.setText("Copiado!")
+            QMessageBox.information(
+                dialog,
+                "ID da maquina",
+                f"ID copiado para a area de transferencia:\n\n{maquina_id}\n\n"
+                "Envie este ID para gerar sua chave de licenca.",
+            )
+            btn_copiar.setText("Copiar ID")
+
+        btn_copiar.clicked.connect(_copiar)
+        id_layout.addWidget(btn_copiar)
+        layout.addLayout(id_layout)
+
+        layout.addWidget(QLabel("Chave de licenca:"))
+        input_chave = QLineEdit()
+        input_chave.setPlaceholderText("Cole aqui a chave (YYYYMMDD-XXXXXX)")
+        layout.addWidget(input_chave)
+
+        botoes = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        )
+        botoes.accepted.connect(dialog.accept)
+        botoes.rejected.connect(dialog.reject)
+        layout.addWidget(botoes)
+
+        input_chave.setFocus()
+        if dialog.exec() != QDialog.Accepted:
+            return None
+        return input_chave.text()
 
     def _init_services(self) -> None:
         self.storage = AppStorage()
@@ -761,20 +816,19 @@ class AppContainer(QMainWindow):
             # Processar chave de licenca (se preenchida)
             chave = self.input_chave_licenca.text().strip()
             if chave:
-                if self.licenca_service.registrar_chave(chave):
+                sucesso, mensagem = self.licenca_service.registrar_chave(chave)
+                if sucesso:
                     self.relatorio_service.set_licenca(chave.strip().upper())
                     QMessageBox.information(
                         dialog,
                         "Licença",
-                        "Licença ativada com sucesso!\n"
-                        "Reinicie a aplicação para aplicar.",
+                        f"{mensagem}\nReinicie a aplicação para aplicar.",
                     )
                 else:
                     QMessageBox.warning(
                         dialog,
                         "Licença",
-                        "Chave inválida para esta máquina. "
-                        "Verifique o ID da máquina e a chave.",
+                        f"{mensagem}\n\nVerifique o ID da máquina e a chave.",
                     )
                     return
 

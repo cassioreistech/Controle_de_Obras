@@ -1,5 +1,5 @@
 """Controle de Obras — sistema de gestão financeira e documental para obras."""
 
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 APP_NAME = "Controle de Obras"
 COMPANY_NAME = "CASSIO REIS TECH"
