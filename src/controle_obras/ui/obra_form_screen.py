@@ -66,7 +66,7 @@ class ObraFormScreen(QWidget):
         self.input_observacoes = QTextEdit()
         self.input_observacoes.setMaximumHeight(120)
 
-        form_layout.addRow("Código *", self.input_codigo)
+        form_layout.addRow("Contrato *", self.input_codigo)
         form_layout.addRow("Nome *", self.input_nome)
         form_layout.addRow("Cliente Contratante", self.input_cliente)
         form_layout.addRow("Local da Obra", self.input_local)

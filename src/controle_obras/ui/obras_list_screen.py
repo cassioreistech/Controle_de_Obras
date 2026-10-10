@@ -87,7 +87,7 @@ class ObrasListScreen(QWidget):
         self.table = QTableWidget()
         self.table.setColumnCount(8)
         self.table.setHorizontalHeaderLabels(
-            ["Código", "Nome", "Cliente", "Local", "Valor Contratado", "Status", "", ""]
+            ["Contrato", "Nome", "Cliente", "Local", "Valor Contratado", "Status", "", ""]
         )
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)

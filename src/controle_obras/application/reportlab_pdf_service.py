@@ -427,7 +427,7 @@ def _build_cabecalho(obra: Any, estilos: dict, fonte_bold: str, base: Any, logo_
     
     info_data = [
         [
-            Paragraph("CÓDIGO:", estilos["Texto"]),
+            Paragraph("CONTRATO:", estilos["Texto"]),
             Paragraph(_texto(obra.codigo).upper(), info_valor_style),
             Paragraph("CLIENTE:", estilos["Texto"]),
             Paragraph(_texto(obra.cliente_contratante, 'Não informado').upper(), info_valor_style),
