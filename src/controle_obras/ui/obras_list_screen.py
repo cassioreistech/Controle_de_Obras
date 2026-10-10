@@ -135,6 +135,10 @@ class ObrasListScreen(QWidget):
             or termo in obra.local_obra.lower()
         ]
 
+        # Ordena: "Concluída" e "Cancelada" no final, demais primeiro
+        _ordem_status = {"Em andamento": 0, "Pausada": 1}
+        obras_filtradas.sort(key=lambda o: (_ordem_status.get(o.status, 9), o.nome))
+
         obra_ativa_id = self._parent.config_service.obter_obra_ativa()
 
         # Evita que o sorting ativo embaralhe linhas/cellWidgets durante o preenchimento
