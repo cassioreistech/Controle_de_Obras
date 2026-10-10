@@ -53,6 +53,7 @@ from controle_obras.ui.styles import (
 ORIGENS_COM_ANEXO_OBRIGATORIO = {
     "Planilha orçamentária",
     "Nota Fiscal",
+    "Comprovante Pagamento",
 }
 
 
@@ -144,7 +145,7 @@ class LancamentosScreen(QWidget):
 
         self.input_origem = QComboBox()
         self.input_origem.addItems(
-            ["Manual", "Planilha orçamentária", "Nota Fiscal", "Outros"]
+            ["Manual", "Planilha orçamentária", "Nota Fiscal", "Comprovante Pagamento", "Outros"]
         )
         self.input_origem.currentTextChanged.connect(self._origem_alterada)
         self.input_origem.setStyleSheet(input_style)
@@ -489,7 +490,10 @@ class LancamentosScreen(QWidget):
             self._atualizar_label_anexo()
 
     def _selecionar_arquivo_anexo(self, origem: str) -> None:
-        tipo_arquivo = "Planilhas (*.xlsx *.xls *.csv *.pdf);;Todos os arquivos (*.*)"
+        if origem == "Comprovante Pagamento":
+            tipo_arquivo = "Comprovantes (*.pdf *.jpg *.jpeg *.png);;Todos os arquivos (*.*)"
+        else:
+            tipo_arquivo = "Planilhas (*.xlsx *.xls *.csv *.pdf);;Todos os arquivos (*.*)"
         arquivo, _ = QFileDialog.getOpenFileName(
             self,
             f"Selecionar {origem}",

@@ -306,3 +306,181 @@ def test_backup_seguranca_usa_copia_consistente(temp_app):
             assert row[0] == "x"
         finally:
             conn.close()
+
+
+# ============================================================
+# Testes: manifesto expandido + verificação de anexos
+# ============================================================
+
+
+def test_manifest_contem_total_anexo_files_e_hash(temp_app):
+    """Manifesto deve incluir total_anexo_files e anexo_integrity_hash."""
+    storage, db, service = temp_app
+    storage.anexos_dir.mkdir(parents=True, exist_ok=True)
+    (storage.anexos_dir / "arq1.pdf").write_bytes(b"pdf-fake")
+    (storage.anexos_dir / "arq2.jpg").write_bytes(b"jpg-fake")
+
+    caminho_zip = service.gerar_backup(
+        nome_empresa="Empresa", versao_sistema="1.0.0",
+        quantidade_obras=0, quantidade_anexos=2,
+    )
+    with zipfile.ZipFile(caminho_zip, "r") as zf:
+        manifest = json.loads(zf.read("manifest.json"))
+
+    assert manifest["total_anexo_files"] == 2
+    assert isinstance(manifest["anexo_integrity_hash"], str)
+    assert len(manifest["anexo_integrity_hash"]) == 32
+
+
+def test_manifest_hash_anexos_deterministico(temp_app):
+    """Mesmos arquivos devem gerar o mesmo hash, independentemente da ordem."""
+    storage, db, service = temp_app
+    storage.anexos_dir.mkdir(parents=True, exist_ok=True)
+    (storage.anexos_dir / "a.pdf").write_bytes(b"conteudo-a")
+    (storage.anexos_dir / "b.jpg").write_bytes(b"conteudo-b")
+
+    h1 = service._calcular_hash_anexos(storage.anexos_dir)
+    h2 = service._calcular_hash_anexos(storage.anexos_dir)
+    assert h1 == h2
+    assert h1[0] == 2  # 2 arquivos
+
+
+def test_manifest_hash_anexos_sem_diretorio(temp_app):
+    """Se não há anexos, hash deve ser vazio e total 0."""
+    storage, db, service = temp_app
+    total, h = service._calcular_hash_anexos()
+    assert total == 0
+    assert h == ""
+
+
+def test_backup_zip_contem_todos_os_anexos_do_disco(temp_app):
+    """ZIP de backup deve conter todos os arquivos de storage/anexos/."""
+    storage, db, service = temp_app
+    storage.anexos_dir.mkdir(parents=True, exist_ok=True)
+    (storage.anexos_dir / "doc1.pdf").write_bytes(b"pdf")
+    sub = storage.anexos_dir / "OBRA_X" / "lancamentos" / "LANC_0001"
+    sub.mkdir(parents=True)
+    (sub / "comprovante.jpg").write_bytes(b"jpg")
+
+    caminho_zip = service.gerar_backup(
+        nome_empresa="E", versao_sistema="1.0.0",
+        quantidade_obras=0, quantidade_anexos=2,
+    )
+    with zipfile.ZipFile(caminho_zip, "r") as zf:
+        nomes = set(zf.namelist())
+        assert "storage/anexos/doc1.pdf" in nomes
+        assert "storage/anexos/OBRA_X/lancamentos/LANC_0001/comprovante.jpg" in nomes
+
+
+def test_validar_anexos_pos_restauracao_ok(temp_app):
+    """Após restore, se todos os anexos existem no disco, não há warning."""
+    storage, db, service = temp_app
+    storage.anexos_dir.mkdir(parents=True, exist_ok=True)
+    (storage.anexos_dir / "nota.pdf").write_bytes(b"pdf")
+
+    with db.get_connection() as conn:
+        conn.execute(
+            "INSERT INTO obras (codigo, nome, valor_contratado_inicial) VALUES ('T1', 'Teste', 0)"
+        )
+        conn.execute(
+            "INSERT INTO anexos (obra_id, tipo_anexo, nome_original, nome_armazenado, "
+            "caminho_relativo, hash_arquivo, tamanho_bytes) VALUES (1, 'Nota Fiscal', "
+            "'nota.pdf', 'nota.pdf', 'nota.pdf', '', 3)"
+        )
+        conn.commit()
+
+    service._validar_anexos_pos_restauracao()
+
+
+def test_auditar_anexos_tudo_ok(temp_app):
+    """auditar_anexos() com banco e disco consistentes retorna zero problemas."""
+    from controle_obras.infrastructure.storage import FileHasher
+
+    storage, db, service = temp_app
+    storage.anexos_dir.mkdir(parents=True, exist_ok=True)
+    (storage.anexos_dir / "foto.jpg").write_bytes(b"jpg-conteudo")
+    hash_real = FileHasher.sha256_file(storage.anexos_dir / "foto.jpg")
+
+    with db.get_connection() as conn:
+        conn.execute(
+            "INSERT INTO obras (codigo, nome, valor_contratado_inicial) VALUES ('T1', 'Teste', 0)"
+        )
+        conn.execute(
+            "INSERT INTO anexos (obra_id, tipo_anexo, nome_original, nome_armazenado, "
+            "caminho_relativo, hash_arquivo, tamanho_bytes) VALUES (1, 'Comprovante', "
+            "'foto.jpg', 'foto.jpg', 'foto.jpg', ?, 13)",
+            (hash_real,),
+        )
+        conn.commit()
+
+    resultado = service.auditar_anexos()
+    assert resultado["total_banco"] == 1
+    assert resultado["total_disco"] == 1
+    assert resultado["faltando_no_disco"] == []
+    assert resultado["orfaos_no_disco"] == []
+    assert resultado["hash_mismatches"] == []
+
+
+def test_auditar_anexos_detecta_faltando_no_disco(temp_app):
+    """Registro no banco sem arquivo no disco deve aparecer em faltando_no_disco."""
+    storage, db, service = temp_app
+    storage.anexos_dir.mkdir(parents=True, exist_ok=True)
+
+    with db.get_connection() as conn:
+        conn.execute(
+            "INSERT INTO obras (codigo, nome, valor_contratado_inicial) VALUES ('T1', 'Teste', 0)"
+        )
+        conn.execute(
+            "INSERT INTO anexos (obra_id, tipo_anexo, nome_original, nome_armazenado, "
+            "caminho_relativo, hash_arquivo, tamanho_bytes) VALUES (1, 'NF', "
+            "'fantasma.pdf', 'fantasma.pdf', 'fantasma.pdf', '', 0)"
+        )
+        conn.commit()
+
+    resultado = service.auditar_anexos()
+    assert resultado["total_banco"] == 1
+    assert resultado["total_disco"] == 0
+    assert len(resultado["faltando_no_disco"]) == 1
+    assert resultado["faltando_no_disco"][0]["caminho"] == "fantasma.pdf"
+
+
+def test_auditar_anexos_detecta_orfaos_no_disco(temp_app):
+    """Arquivo no disco sem registro no banco deve aparecer em orfaos_no_disco."""
+    storage, db, service = temp_app
+    storage.anexos_dir.mkdir(parents=True, exist_ok=True)
+    (storage.anexos_dir / "solitario.pdf").write_bytes(b"pdf")
+
+    resultado = service.auditar_anexos()
+    assert resultado["total_banco"] == 0
+    assert resultado["total_disco"] == 1
+    assert "solitario.pdf" in resultado["orfaos_no_disco"]
+
+
+def test_auditar_anexos_detecta_hash_mismatch(temp_app):
+    """Hash do banco diferente do hash do arquivo deve aparecer em hash_mismatches."""
+    from controle_obras.infrastructure.storage import FileHasher
+
+    storage, db, service = temp_app
+    storage.anexos_dir.mkdir(parents=True, exist_ok=True)
+    (storage.anexos_dir / "alterado.pdf").write_bytes(b"conteudo-original")
+    hash_original = FileHasher.sha256_file(storage.anexos_dir / "alterado.pdf")
+
+    with db.get_connection() as conn:
+        conn.execute(
+            "INSERT INTO obras (codigo, nome, valor_contratado_inicial) VALUES ('T1', 'Teste', 0)"
+        )
+        conn.execute(
+            "INSERT INTO anexos (obra_id, tipo_anexo, nome_original, nome_armazenado, "
+            "caminho_relativo, hash_arquivo, tamanho_bytes) VALUES (1, 'NF', "
+            "'alterado.pdf', 'alterado.pdf', 'alterado.pdf', ?, 18)",
+            (hash_original,),
+        )
+        conn.commit()
+
+    (storage.anexos_dir / "alterado.pdf").write_bytes(b"conteudo-ALTERADO")
+
+    resultado = service.auditar_anexos()
+    assert len(resultado["hash_mismatches"]) == 1
+    assert resultado["hash_mismatches"][0]["caminho"] == "alterado.pdf"
+    assert resultado["hash_mismatches"][0]["hash_banco"] == hash_original
+    assert resultado["hash_mismatches"][0]["hash_disco"] != hash_original

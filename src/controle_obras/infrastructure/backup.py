@@ -138,6 +138,9 @@ class BackupService:
             # 2. Verificar integridade do ZIP após criação
             self._verify_zip_integrity(caminho_zip)
 
+            # 2b. Verificar que todos os anexos do disco estão no ZIP
+            self._verificar_backup_anexos(caminho_zip)
+
             # 3. Política de retenção: manter no máximo N backups
             self._apply_retention_policy(destino_path)
 
@@ -193,6 +196,39 @@ class BackupService:
 
             if not any(n.startswith("database/app.db") for n in zf.namelist()):
                 raise BackupError("Banco de dados ausente no backup.")
+
+    def _verificar_backup_anexos(self, caminho_zip: Path) -> None:
+        """Reabre o ZIP e confirma que todos os anexos do disco estão presentes.
+
+        Emite WARNING para cada arquivo faltante (não bloqueia o backup).
+        """
+        if not self.storage.anexos_dir.exists():
+            return
+
+        arquivos_disco: set[str] = set()
+        for arquivo in self.storage.anexos_dir.rglob("*"):
+            if arquivo.is_file():
+                arquivos_disco.add(
+                    "storage/anexos/" + arquivo.relative_to(self.storage.anexos_dir).as_posix()
+                )
+
+        if not arquivos_disco:
+            return
+
+        with zipfile.ZipFile(caminho_zip, "r") as zf:
+            arquivos_zip = set(zf.namelist())
+            faltantes = arquivos_disco - arquivos_zip
+            for faltante in sorted(faltantes):
+                logger.warning("Anexo ausente no backup: %s", faltante)
+
+            if faltantes:
+                logger.warning(
+                    "%d anexo(s) não foram incluídos no backup.", len(faltantes)
+                )
+            else:
+                logger.info(
+                    "Verificação de anexos OK: %d arquivo(s) no backup.", len(arquivos_disco)
+                )
 
     def _apply_retention_policy(self, backup_dir: Path) -> None:
         """Remove backups mais antigos mantendo no máximo MAX_BACKUPS_DIR."""
@@ -253,6 +289,30 @@ class BackupService:
     ) -> dict[str, Any]:
         return self._gerar_manifest(timestamp, versao_sistema, nome_empresa, quantidade_obras, quantidade_anexos, db_path)
 
+    def _calcular_hash_anexos(self, anexos_dir: Path | None = None) -> tuple[int, str]:
+        """Conta arquivos de anexo e gera hash composto (qtd, hash_sorted_paths_hashes).
+
+        Retorna (total_arquivos, hash_composto). O hash é determinístico:
+        SHA-256 da concatenação ordenada de "path|sha256" de cada arquivo.
+        """
+        diretorio = anexos_dir or self.storage.anexos_dir
+        if not diretorio.exists():
+            return 0, ""
+
+        entradas: list[str] = []
+        for arquivo in sorted(diretorio.rglob("*")):
+            if arquivo.is_file():
+                rel = arquivo.relative_to(diretorio).as_posix()
+                h = FileHasher.sha256_file(arquivo)
+                entradas.append(f"{rel}|{h}")
+
+        if not entradas:
+            return 0, ""
+
+        payload = "\n".join(entradas)
+        hash_composto = FileHasher.sha256_bytes(payload.encode("utf-8"))[:32]
+        return len(entradas), hash_composto
+
     def _gerar_manifest(
         self,
         timestamp: str,
@@ -262,6 +322,7 @@ class BackupService:
         quantidade_anexos: int,
         db_path: Path,
     ) -> dict[str, Any]:
+        total_anexo_files, anexo_integrity_hash = self._calcular_hash_anexos()
         manifest: dict[str, Any] = {
             "backup_version": BACKUP_VERSION,
             "app_version": versao_sistema,
@@ -272,6 +333,8 @@ class BackupService:
             "reports_root": "reports/obras/",
             "total_obras": quantidade_obras,
             "total_attachments": quantidade_anexos,
+            "total_anexo_files": total_anexo_files,
+            "anexo_integrity_hash": anexo_integrity_hash,
             "hash_database": FileHasher.sha256_file(db_path),
             "notes": "Backup completo gerado pelo Controle de Obras",
         }
@@ -503,6 +566,8 @@ class BackupService:
         if not self.storage.anexos_dir.exists():
             logger.warning("Diretório de anexos não encontrado após restauração.")
 
+        self._validar_anexos_pos_restauracao()
+
         logger.info("Validações pós-restauração concluídas com integridade OK.")
 
     def _verificar_logos(self) -> None:
@@ -521,6 +586,142 @@ class BackupService:
                             (new_path, row["id"]),
                         )
                         logger.info("Logo atualizado para: %s", new_path)
+
+    def _validar_anexos_pos_restauracao(self) -> None:
+        """Percorre tabela anexos e confirma que cada arquivo existe no disco.
+
+        Emite WARNING para cada anexo faltante (não bloqueia o restore).
+        """
+        if not self.db.db_path.exists():
+            return
+
+        conn = sqlite3.connect(str(self.db.db_path))
+        conn.row_factory = sqlite3.Row
+        try:
+            rows = conn.execute(
+                "SELECT id, obra_id, caminho_relativo FROM anexos"
+            ).fetchall()
+        finally:
+            conn.close()
+
+        if not rows:
+            return
+
+        faltantes: list[dict[str, Any]] = []
+        for row in rows:
+            caminho = self.storage.anexos_dir / row["caminho_relativo"]
+            if not caminho.exists():
+                faltantes.append(
+                    {"anexo_id": row["id"], "obra_id": row["obra_id"], "caminho": row["caminho_relativo"]}
+                )
+
+        if faltantes:
+            for f in faltantes:
+                logger.warning(
+                    "Anexo faltante após restore: id=%s obra=%s arquivo=%s",
+                    f["anexo_id"], f["obra_id"], f["caminho"],
+                )
+            logger.warning(
+                "%d anexo(s) referenciados no banco não encontrados no disco.", len(faltantes)
+            )
+        else:
+            logger.info(
+                "Verificação pós-restore OK: %d anexo(s) encontrados no disco.", len(rows)
+            )
+
+    def auditar_anexos(self) -> dict[str, Any]:
+        """Compara banco vs disco e retorna inconsistências.
+
+        Retorna dict com:
+        - total_banco: int  (registros na tabela anexos)
+        - total_disco: int  (arquivos em storage/anexos/)
+        - faltando_no_disco: list[dict]  (registro no banco mas arquivo ausente)
+        - orfaos_no_disco: list[str]  (arquivo no disco sem registro no banco)
+        - hash_mismatches: list[dict]  (hash do banco != hash do arquivo)
+        """
+        resultado: dict[str, Any] = {
+            "total_banco": 0,
+            "total_disco": 0,
+            "faltando_no_disco": [],
+            "orfaos_no_disco": [],
+            "hash_mismatches": [],
+        }
+
+        if not self.db.db_path.exists():
+            return resultado
+
+        # 1. Ler registros do banco
+        conn = sqlite3.connect(str(self.db.db_path))
+        conn.row_factory = sqlite3.Row
+        try:
+            rows = conn.execute(
+                "SELECT id, obra_id, caminho_relativo, hash_arquivo FROM anexos"
+            ).fetchall()
+        finally:
+            conn.close()
+
+        resultado["total_banco"] = len(rows)
+        banco_por_caminho: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            banco_por_caminho[row["caminho_relativo"]] = {
+                "id": row["id"],
+                "obra_id": row["obra_id"],
+                "hash_arquivo": row["hash_arquivo"] or "",
+            }
+
+        # 2. Listar arquivos no disco
+        disco_arquivos: dict[str, str] = {}  # caminho_relativo -> hash
+        if self.storage.anexos_dir.exists():
+            for arquivo in self.storage.anexos_dir.rglob("*"):
+                if arquivo.is_file():
+                    rel = str(arquivo.relative_to(self.storage.anexos_dir))
+                    disco_arquivos[rel] = FileHasher.sha256_file(arquivo)
+
+        resultado["total_disco"] = len(disco_arquivos)
+
+        # 3. Faltando no disco (banco tem, disco não tem)
+        for caminho, info in banco_por_caminho.items():
+            if caminho not in disco_arquivos:
+                resultado["faltando_no_disco"].append({
+                    "anexo_id": info["id"],
+                    "obra_id": info["obra_id"],
+                    "caminho": caminho,
+                })
+
+        # 4. Órfãos no disco (disco tem, banco não tem)
+        for caminho in disco_arquivos:
+            if caminho not in banco_por_caminho:
+                resultado["orfaos_no_disco"].append(caminho)
+
+        # 5. Hash mismatches
+        for caminho, info in banco_por_caminho.items():
+            if caminho in disco_arquivos and info["hash_arquivo"] and disco_arquivos[caminho] != info["hash_arquivo"]:
+                resultado["hash_mismatches"].append({
+                    "anexo_id": info["id"],
+                    "caminho": caminho,
+                    "hash_banco": info["hash_arquivo"],
+                    "hash_disco": disco_arquivos[caminho],
+                })
+
+        # Log resumo
+        problemas = (
+            len(resultado["faltando_no_disco"])
+            + len(resultado["orfaos_no_disco"])
+            + len(resultado["hash_mismatches"])
+        )
+        if problemas:
+            logger.warning(
+                "Auditoria de anexos: %d problema(s) encontrado(s) "
+                "(faltando=%d, órfãos=%d, hashes=%d)",
+                problemas,
+                len(resultado["faltando_no_disco"]),
+                len(resultado["orfaos_no_disco"]),
+                len(resultado["hash_mismatches"]),
+            )
+        else:
+            logger.info("Auditoria de anexos OK: %d banco, %d disco.", len(rows), len(disco_arquivos))
+
+        return resultado
 
     def _criar_backup_seguranca(self) -> Path:
         """Cria backup automático do estado atual antes de restaurar."""
