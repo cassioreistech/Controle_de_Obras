@@ -1,0 +1,43 @@
+﻿# Dependências
+node_modules/
+vendor/
+.venv/
+venv/
+env/
+
+# Build / artefatos
+dist/
+build/
+.next/
+out/
+target/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Logs / locks
+*.log
+*.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Dados pesados
+*.sql
+*.csv
+*.db
+*.sqlite
+*.sqlite3
+
+# Minificados / mapas
+*.min.js
+*.min.css
+*.map
+
+# Diversos
+.git/
+.opencode/
